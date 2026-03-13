@@ -144,7 +144,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
       fillColor: getColor(value, selectedIndicator?.higherIsWorse),
       weight: isSelected ? 3 : 1,
       color: isSelected ? '#1a3a6e' : '#888',
-      fillOpacity: isSelected ? 0.9 : 0.75,
+      fillOpacity: isSelected ? 0.7 : 0.5,
     };
   };
 
