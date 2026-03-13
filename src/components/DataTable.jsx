@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { INDICATORS } from '../api';
 import { getColor, normalizeValues } from './MapView';
 
-export default function DataTable({ gebieden, kerncijfers, selectedGebied, onSelectGebied }) {
-  // Compute normalized values for all indicators
+export default function DataTable({ gebieden, kerncijfers, selectedGebied, selectedStreet, onSelectGebied, selectedIndicator }) {
   const normalizedMap = useMemo(() => {
     if (!kerncijfers) return {};
     const map = {};
@@ -13,40 +12,59 @@ export default function DataTable({ gebieden, kerncijfers, selectedGebied, onSel
     return map;
   }, [kerncijfers]);
 
-  // Sort gebieden by first indicator (worst first for higherIsWorse)
+  // Sort by the currently selected indicator (worst first)
   const sorted = useMemo(() => {
-    if (!gebieden.length || !kerncijfers) return [];
+    if (!gebieden.length || !kerncijfers || !selectedIndicator) return [];
+    const indId = selectedIndicator.id;
     return [...gebieden]
       .filter((g) => !g.eindGeldigheid)
       .sort((a, b) => {
-        const indId = INDICATORS[0].id;
         const aVal = kerncijfers[indId]?.[a.code];
         const bVal = kerncijfers[indId]?.[b.code];
+        if (aVal == null && bVal == null) return 0;
         if (aVal == null) return 1;
         if (bVal == null) return -1;
-        return INDICATORS[0].higherIsWorse ? bVal - aVal : aVal - bVal;
+        return selectedIndicator.higherIsWorse ? bVal - aVal : aVal - bVal;
       });
-  }, [gebieden, kerncijfers]);
+  }, [gebieden, kerncijfers, selectedIndicator]);
+
+  // When a wijk is selected, show only that row; otherwise show all
+  const displayRows = selectedGebied
+    ? sorted.filter((g) => g.code === selectedGebied.code)
+    : sorted;
 
   if (!kerncijfers || sorted.length === 0) return null;
 
   return (
     <div className="data-table-container">
-      <h3>Overzicht alle wijken</h3>
+      <h3>
+        {selectedGebied
+          ? `Details: ${selectedGebied.naam}${selectedStreet ? ` — ${selectedStreet.naam}` : ''}`
+          : `Overzicht alle wijken — gesorteerd op: ${selectedIndicator.label}`}
+      </h3>
+      {selectedGebied && (
+        <button className="clear-selection" onClick={() => onSelectGebied(null)}>
+          Toon alle wijken
+        </button>
+      )}
       <div className="data-table-scroll">
         <table className="data-table">
           <thead>
             <tr>
               <th className="th-wijk">Wijk</th>
               {INDICATORS.map((ind) => (
-                <th key={ind.id} title={ind.label}>
-                  {ind.label.replace(/:.*/,'').replace('Veiligheid buurt','Veiligheid').replace('Sociale cohesie','Soc. cohesie').replace('Kwetsbaarheidsscore hoog','Kwetsbaar').replace('Misdrijven per 1.000 inwoners','Misdrijven/1k').replace('Criminaliteit','Crimi')}
+                <th
+                  key={ind.id}
+                  title={ind.label}
+                  className={ind.id === selectedIndicator.id ? 'th-active' : ''}
+                >
+                  {shortLabel(ind.label)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {sorted.map((g) => {
+            {displayRows.map((g) => {
               const isSelected = selectedGebied?.code === g.code;
               return (
                 <tr
@@ -58,6 +76,18 @@ export default function DataTable({ gebieden, kerncijfers, selectedGebied, onSel
                   {INDICATORS.map((ind) => {
                     const val = kerncijfers[ind.id]?.[g.code];
                     const norm = normalizedMap[ind.id]?.[g.code];
+                    // No data = gray background, no color coding
+                    if (val == null) {
+                      return (
+                        <td
+                          key={ind.id}
+                          style={{ backgroundColor: '#eee', color: '#999' }}
+                          className="td-value"
+                        >
+                          —
+                        </td>
+                      );
+                    }
                     const bg = getColor(norm, ind.higherIsWorse);
                     const textColor = isLightColor(bg) ? '#1a1a1a' : '#ffffff';
                     return (
@@ -66,7 +96,7 @@ export default function DataTable({ gebieden, kerncijfers, selectedGebied, onSel
                         style={{ backgroundColor: bg, color: textColor }}
                         className="td-value"
                       >
-                        {val != null ? formatVal(val, ind) : '—'}
+                        {formatVal(val, ind)}
                       </td>
                     );
                   })}
@@ -78,16 +108,30 @@ export default function DataTable({ gebieden, kerncijfers, selectedGebied, onSel
       </div>
 
       <div className="legend-bar">
-        <span className="legend-label">Legenda:</span>
+        <span className="legend-label">Legenda (t.o.v. Amsterdams gemiddelde):</span>
         <span className="legend-swatch" style={{ background: '#1a7a2f' }}></span> Ruim boven gem.
         <span className="legend-swatch" style={{ background: '#7cba3f' }}></span> Boven gem.
         <span className="legend-swatch" style={{ background: '#f0dc32' }}></span> Gemiddeld
         <span className="legend-swatch" style={{ background: '#f0961e' }}></span> Onder gem.
         <span className="legend-swatch" style={{ background: '#e6321e' }}></span> Ruim onder gem.
         <span className="legend-swatch" style={{ background: '#8b1a1a' }}></span> Kritiek
+        <span className="legend-swatch" style={{ background: '#eee', border: '1px solid #ccc' }}></span> Geen data
       </div>
     </div>
   );
+}
+
+function shortLabel(label) {
+  return label
+    .replace('Misdrijven per 1.000 inwoners', 'Misdrijven/1k')
+    .replace('Veiligheid buurt (1-10)', 'Veiligheid')
+    .replace('Overlast: % veel', 'Overlast %')
+    .replace('Kwetsbaarheidsscore hoog (%)', 'Kwetsbaar %')
+    .replace('Sociale cohesie (1-10)', 'Soc. cohesie')
+    .replace('SES laag (%)', 'SES laag %')
+    .replace('Overlast: drugsgebruik (%)', 'Drugs %')
+    .replace('Overlast: jongeren (%)', 'Jongeren %')
+    .replace('Criminaliteit: % veel', 'Crimi %');
 }
 
 function formatVal(val, ind) {

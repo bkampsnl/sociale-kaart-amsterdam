@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './App.css';
 import MapView from './components/MapView';
 import DataTable from './components/DataTable';
 import SearchBar from './components/SearchBar';
@@ -10,6 +11,7 @@ export default function App() {
   const [geojson, setGeojson] = useState(null);
   const [kerncijfers, setKerncijfers] = useState(null);
   const [selectedGebied, setSelectedGebied] = useState(null);
+  const [selectedStreet, setSelectedStreet] = useState(null);
   const [selectedIndicator, setSelectedIndicator] = useState(INDICATORS[0]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,6 +39,7 @@ export default function App() {
       <SearchBar
         gebieden={gebieden}
         onSelectGebied={setSelectedGebied}
+        onSelectStreet={setSelectedStreet}
         selectedIndicator={selectedIndicator}
         onSelectIndicator={setSelectedIndicator}
       />
@@ -49,6 +52,7 @@ export default function App() {
             kerncijfers={kerncijfers}
             selectedIndicator={selectedIndicator}
             selectedGebied={selectedGebied}
+            selectedStreet={selectedStreet}
             onSelectGebied={setSelectedGebied}
           />
         )}
@@ -57,7 +61,9 @@ export default function App() {
         gebieden={gebieden}
         kerncijfers={kerncijfers}
         selectedGebied={selectedGebied}
+        selectedStreet={selectedStreet}
         onSelectGebied={setSelectedGebied}
+        selectedIndicator={selectedIndicator}
       />
     </div>
   );

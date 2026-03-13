@@ -54,6 +54,32 @@ export async function fetchAllKerncijfers() {
   return results;
 }
 
+export async function searchStreets(query) {
+  if (!query || query.length < 2) return [];
+  const url = `${BASE}/bag/openbareruimtes/?naam[like]=${encodeURIComponent(query)}*&typeOmschrijving=Weg&_pageSize=8&_fields=naam,identificatie&_format=json`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return (data._embedded?.openbareruimtes || []).map((s) => ({
+    naam: s.naam,
+    identificatie: s.identificatie,
+    type: 'straat',
+  }));
+}
+
+export async function fetchStreetGeometry(identificatie) {
+  const url = `${BASE}/bag/openbareruimtes/${identificatie}?_fields=naam,geometrie&_format=json`;
+  const res = await fetch(url, { headers: { 'Accept-Crs': 'EPSG:4326' } });
+  return res.json();
+}
+
+export async function findWijkByCoord(lat, lon) {
+  const url = `${BASE}/gebieden/wijken/?geometrie[contains]=${lat},${lon}&_pageSize=1&_fields=naam,code,identificatie&_format=json`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const wijken = data._embedded?.wijken || [];
+  return wijken[0] || null;
+}
+
 export async function fetchMeldingen(wijkCode, limit = 100) {
   const url = `${BASE}/meldingen/meldingen/?gbdWijkCode=${wijkCode}&_pageSize=${limit}&_format=json&_sort=-datumMelding`;
   const res = await fetch(url);

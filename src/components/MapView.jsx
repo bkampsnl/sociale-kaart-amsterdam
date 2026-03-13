@@ -1,3 +1,4 @@
+import L from 'leaflet';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import { useRef, useEffect, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
@@ -6,48 +7,102 @@ import 'leaflet/dist/leaflet.css';
 export function getColor(value, higherIsWorse) {
   if (value == null) return '#ccc';
   const v = higherIsWorse ? value : 1 - value;
-  if (v < 0.15) return '#1a7a2f';   // dark green - ruim boven gemiddeld
-  if (v < 0.35) return '#7cba3f';   // light green - boven gemiddeld
-  if (v < 0.55) return '#f0dc32';   // yellow - rond gemiddeld
-  if (v < 0.75) return '#f0961e';   // orange - onder gemiddeld
-  if (v < 0.9) return '#e6321e';    // red - ruim onder gemiddeld
-  return '#8b1a1a';                 // dark red - veel lager
+  if (v < 0.15) return '#1a7a2f';
+  if (v < 0.35) return '#7cba3f';
+  if (v < 0.55) return '#f0dc32';
+  if (v < 0.75) return '#f0961e';
+  if (v < 0.9) return '#e6321e';
+  return '#8b1a1a';
 }
 
 export function normalizeValues(kerncijfers, indicatorId) {
   if (!kerncijfers) return {};
   const values = kerncijfers[indicatorId] || {};
-  const nums = Object.values(values).filter((v) => v != null);
-  if (nums.length === 0) return {};
-  const min = Math.min(...nums);
-  const max = Math.max(...nums);
-  const range = max - min || 1;
+  const entries = Object.entries(values).filter(([, v]) => v != null);
+  if (entries.length === 0) return {};
+  // Percentile-based normalization: rank each value among all values
+  const sorted = entries.map(([, v]) => v).sort((a, b) => a - b);
   const result = {};
-  for (const [code, val] of Object.entries(values)) {
-    result[code] = (val - min) / range;
+  for (const [code, val] of entries) {
+    const rank = sorted.filter((v) => v < val).length;
+    result[code] = rank / (sorted.length - 1 || 1);
   }
   return result;
 }
 
-function FlyToArea({ geojson, selectedGebied }) {
+function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
   const map = useMap();
 
   useEffect(() => {
+    // If a street is selected, zoom to the street (tighter zoom)
+    if (selectedStreet?.geometry) {
+      const layer = L.geoJSON(selectedStreet.geometry);
+      map.flyToBounds(layer.getBounds(), { padding: [80, 80], maxZoom: 15 });
+      return;
+    }
     if (!selectedGebied || !geojson) return;
     const feature = geojson.features.find(
       (f) => f.properties.code === selectedGebied.code
     );
     if (feature) {
-      const L = window.L || require('leaflet');
       const layer = L.geoJSON(feature);
-      map.flyToBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 14 });
+      map.flyToBounds(layer.getBounds(), { padding: [200, 200], maxZoom: 12 });
     }
-  }, [selectedGebied?.code]);
+  }, [selectedGebied?.code, selectedStreet, geojson, map]);
 
   return null;
 }
 
-export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, onSelectGebied }) {
+function StreetHighlight({ selectedStreet }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+
+  useEffect(() => {
+    // Remove previous street layer
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+      layerRef.current = null;
+    }
+    if (!selectedStreet?.geometry) return;
+
+    // Add street geometry as a highlighted layer
+    const layer = L.geoJSON(selectedStreet.geometry, {
+      style: {
+        color: '#ff00ff',
+        weight: 5,
+        opacity: 0.9,
+        fillColor: '#ff00ff',
+        fillOpacity: 0.3,
+      },
+    });
+    layer.addTo(map);
+    layerRef.current = layer;
+
+    // Add a label popup at the centroid
+    if (selectedStreet.centroid) {
+      const popup = L.popup({ closeButton: false, autoClose: false, closeOnClick: false, className: 'street-popup' })
+        .setLatLng(selectedStreet.centroid)
+        .setContent(`<strong>${selectedStreet.naam}</strong>`)
+        .openOn(map);
+      // Store popup ref for cleanup
+      layer._streetPopup = popup;
+    }
+
+    return () => {
+      if (layerRef.current) {
+        if (layerRef.current._streetPopup) {
+          map.closePopup(layerRef.current._streetPopup);
+        }
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [selectedStreet, map]);
+
+  return null;
+}
+
+export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied }) {
   const geoJsonRef = useRef();
 
   const normalized = useMemo(() => {
@@ -100,7 +155,8 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
         style={style}
         onEachFeature={onEachFeature}
       />
-      <FlyToArea geojson={geojson} selectedGebied={selectedGebied} />
+      <FlyToArea geojson={geojson} selectedGebied={selectedGebied} selectedStreet={selectedStreet} />
+      <StreetHighlight selectedStreet={selectedStreet} />
     </MapContainer>
   );
 }
