@@ -2,14 +2,15 @@ const BASE = 'https://api.data.amsterdam.nl/v1';
 
 export async function fetchGebieden() {
   const all = [];
-  let url = `${BASE}/gebieden/ggwgebieden/?_format=json&_pageSize=100`;
+  let url = `${BASE}/gebieden/wijken/?_format=json&_pageSize=100`;
   while (url) {
     const res = await fetch(url);
     const data = await res.json();
-    all.push(...data._embedded.ggwgebieden);
+    all.push(...data._embedded.wijken);
     url = data._links.next?.href || null;
   }
-  return all;
+  // Filter out records without geometry or with an end date (inactive)
+  return all.filter((g) => g.geometrie && !g.eindGeldigheid);
 }
 
 export const INDICATORS = [
@@ -53,15 +54,15 @@ export async function fetchAllKerncijfers() {
   return results;
 }
 
-export async function fetchMeldingen(ggwCode, limit = 100) {
-  const url = `${BASE}/meldingen/meldingen/?gbdGgwgebiedCode=${ggwCode}&_pageSize=${limit}&_format=json&_sort=-datumMelding`;
+export async function fetchMeldingen(wijkCode, limit = 100) {
+  const url = `${BASE}/meldingen/meldingen/?gbdWijkCode=${wijkCode}&_pageSize=${limit}&_format=json&_sort=-datumMelding`;
   const res = await fetch(url);
   const data = await res.json();
   return data._embedded.meldingen;
 }
 
-export async function fetchMeldingenByCategorie(ggwCode) {
-  const meldingen = await fetchMeldingen(ggwCode, 500);
+export async function fetchMeldingenByCategorie(wijkCode) {
+  const meldingen = await fetchMeldingen(wijkCode, 500);
   const counts = {};
   for (const m of meldingen) {
     const cat = m.subcategorie || m.hoofdcategorie;
