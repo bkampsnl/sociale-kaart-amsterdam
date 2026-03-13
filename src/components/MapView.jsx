@@ -34,10 +34,15 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
   const map = useMap();
 
   useEffect(() => {
-    // If a street is selected, zoom to the street (tighter zoom)
     if (selectedStreet?.geometry) {
-      const layer = L.geoJSON(selectedStreet.geometry);
-      map.flyToBounds(layer.getBounds(), { padding: [80, 80], maxZoom: 15 });
+      if (selectedStreet.isPoint) {
+        // Address: fly to point at high zoom
+        map.flyTo(selectedStreet.centroid, 17, { duration: 1.5 });
+      } else {
+        // Street: fly to bounds
+        const layer = L.geoJSON(selectedStreet.geometry);
+        map.flyToBounds(layer.getBounds(), { padding: [80, 80], maxZoom: 15 });
+      }
       return;
     }
     if (!selectedGebied || !geojson) return;
@@ -58,33 +63,54 @@ function StreetHighlight({ selectedStreet }) {
   const layerRef = useRef(null);
 
   useEffect(() => {
-    // Remove previous street layer
+    // Remove previous layers
     if (layerRef.current) {
       map.removeLayer(layerRef.current);
       layerRef.current = null;
     }
     if (!selectedStreet?.geometry) return;
 
-    // Add street geometry as a highlighted layer
-    const layer = L.geoJSON(selectedStreet.geometry, {
-      style: {
-        color: '#ff00ff',
-        weight: 5,
-        opacity: 0.9,
-        fillColor: '#ff00ff',
-        fillOpacity: 0.3,
-      },
-    });
+    let layer;
+    if (selectedStreet.isPoint) {
+      // Address: show a large circle marker
+      const [lat, lon] = selectedStreet.centroid;
+      layer = L.layerGroup([
+        L.circleMarker([lat, lon], {
+          radius: 12,
+          color: '#ff00ff',
+          weight: 3,
+          fillColor: '#ff00ff',
+          fillOpacity: 0.4,
+        }),
+        L.circleMarker([lat, lon], {
+          radius: 4,
+          color: '#fff',
+          weight: 2,
+          fillColor: '#ff00ff',
+          fillOpacity: 1,
+        }),
+      ]);
+    } else {
+      // Street: show polygon/line highlight
+      layer = L.geoJSON(selectedStreet.geometry, {
+        style: {
+          color: '#ff00ff',
+          weight: 5,
+          opacity: 0.9,
+          fillColor: '#ff00ff',
+          fillOpacity: 0.3,
+        },
+      });
+    }
     layer.addTo(map);
     layerRef.current = layer;
 
-    // Add a label popup at the centroid
+    // Add a label popup
     if (selectedStreet.centroid) {
       const popup = L.popup({ closeButton: false, autoClose: false, closeOnClick: false, className: 'street-popup' })
         .setLatLng(selectedStreet.centroid)
         .setContent(`<strong>${selectedStreet.naam}</strong>`)
         .openOn(map);
-      // Store popup ref for cleanup
       layer._streetPopup = popup;
     }
 

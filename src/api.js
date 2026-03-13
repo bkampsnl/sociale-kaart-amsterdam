@@ -54,6 +54,13 @@ export async function fetchAllKerncijfers() {
   return results;
 }
 
+// Parse "Keizersgracht 100" or "Keizersgracht 100A" into { street, number, letter }
+export function parseAddressQuery(query) {
+  const match = query.match(/^(.+?)\s+(\d+)\s*([a-zA-Z]?)$/);
+  if (match) return { street: match[1].trim(), number: parseInt(match[2]), letter: match[3] || null };
+  return { street: query.trim(), number: null, letter: null };
+}
+
 export async function searchStreets(query) {
   if (!query || query.length < 2) return [];
   const url = `${BASE}/bag/openbareruimtes/?naam[like]=${encodeURIComponent(query)}*&typeOmschrijving=Weg&_pageSize=8&_fields=naam,identificatie&_format=json`;
@@ -64,6 +71,36 @@ export async function searchStreets(query) {
     identificatie: s.identificatie,
     type: 'straat',
   }));
+}
+
+export async function searchAddresses(streetName, number, letter) {
+  let url = `${BASE}/bag/nummeraanduidingen/?ligtAanOpenbareruimte.naam[like]=${encodeURIComponent(streetName)}*&huisnummer=${number}&_expandScope=adresseertVerblijfsobject&_pageSize=10&_format=json`;
+  if (letter) url += `&huisletter=${letter.toUpperCase()}`;
+  const res = await fetch(url, { headers: { 'Accept-Crs': 'EPSG:4326' } });
+  const data = await res.json();
+  const nummers = data._embedded?.nummeraanduidingen || [];
+  const verblijfs = data._embedded?.adresseertVerblijfsobject || [];
+
+  // Build a map of verblijfsobject id → geometry
+  const geoMap = {};
+  for (const v of verblijfs) {
+    if (v.identificatie && v.geometrie) {
+      geoMap[v.identificatie] = v.geometrie;
+    }
+  }
+
+  return nummers
+    .map((n) => {
+      const label = `${n._links?.ligtAanOpenbareruimte?.title || streetName} ${n.huisnummer}${n.huisletter || ''}${n.huisnummertoevoeging ? '-' + n.huisnummertoevoeging : ''}`;
+      const geom = geoMap[n.adresseertVerblijfsobjectId];
+      return {
+        naam: label,
+        postcode: n.postcode,
+        geometry: geom,
+        type: 'adres',
+      };
+    })
+    .filter((a) => a.geometry);
 }
 
 export async function fetchStreetGeometry(identificatie) {

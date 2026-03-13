@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { INDICATORS, searchStreets, fetchStreetGeometry, findWijkByCoord } from '../api';
+import { INDICATORS, searchStreets, searchAddresses, parseAddressQuery, fetchStreetGeometry, findWijkByCoord } from '../api';
 
 export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, selectedIndicator, onSelectIndicator }) {
   const [query, setQuery] = useState('');
@@ -14,34 +14,47 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
       return;
     }
 
-    // Local wijk matches (instant)
+    const { street, number } = parseAddressQuery(query);
+
+    // Local wijk matches (instant) - only if no house number
     const q = query.toLowerCase();
-    const wijkMatches = gebieden
-      .filter((g) => g.naam.toLowerCase().includes(q) || g.code.toLowerCase().includes(q))
-      .slice(0, 5)
-      .map((g) => ({ ...g, type: 'wijk' }));
+    const wijkMatches = number
+      ? []
+      : gebieden
+          .filter((g) => g.naam.toLowerCase().includes(q) || g.code.toLowerCase().includes(q))
+          .slice(0, 5)
+          .map((g) => ({ ...g, type: 'wijk' }));
 
     setSuggestions(wijkMatches);
 
-    // Debounced street API search
+    // Debounced API search
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const streets = await searchStreets(query);
-        // Deduplicate streets by name and merge with wijk results
-        const seen = new Set(wijkMatches.map((w) => w.naam.toLowerCase()));
-        const unique = streets.filter((s) => {
-          const key = s.naam.toLowerCase();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-        setSuggestions((prev) => {
-          const wijken = prev.filter((s) => s.type === 'wijk');
-          return [...wijken, ...unique];
-        });
+        if (number && street.length >= 2) {
+          // Address search (street + house number)
+          const addresses = await searchAddresses(street, number);
+          setSuggestions((prev) => {
+            const wijken = prev.filter((s) => s.type === 'wijk');
+            return [...wijken, ...addresses.slice(0, 8)];
+          });
+        } else {
+          // Street-only search
+          const streets = await searchStreets(query);
+          const seen = new Set(wijkMatches.map((w) => w.naam.toLowerCase()));
+          const unique = streets.filter((s) => {
+            const key = s.naam.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setSuggestions((prev) => {
+            const wijken = prev.filter((s) => s.type === 'wijk');
+            return [...wijken, ...unique];
+          });
+        }
       } catch {
-        // Street search failed silently, wijk results still shown
+        // API search failed silently
       }
     }, 300);
 
@@ -60,12 +73,10 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
     setShowSuggestions(false);
     setLoading(true);
     try {
-      // Fetch street geometry in WGS84
       const detail = await fetchStreetGeometry(street.identificatie);
       const geom = detail.geometrie;
       if (!geom) return;
 
-      // Compute centroid from geometry coordinates
       const coords = extractCoords(geom);
       if (coords.length === 0) return;
       const centroid = coords.reduce(
@@ -73,10 +84,7 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
         [0, 0]
       );
 
-      // Find which wijk this street is in
       const wijk = await findWijkByCoord(centroid[0], centroid[1]);
-
-      // Notify parent: select the wijk and pass street geometry for highlighting
       if (wijk) {
         onSelectGebied({ code: wijk.code, naam: wijk.naam, identificatie: wijk.identificatie });
       }
@@ -88,12 +96,36 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
     }
   };
 
+  const handleSelectAddress = async (address) => {
+    setQuery(address.naam);
+    setShowSuggestions(false);
+    setLoading(true);
+    try {
+      const [lon, lat] = address.geometry.coordinates;
+
+      const wijk = await findWijkByCoord(lat, lon);
+      if (wijk) {
+        onSelectGebied({ code: wijk.code, naam: wijk.naam, identificatie: wijk.identificatie });
+      }
+      onSelectStreet({
+        naam: address.naam,
+        geometry: address.geometry,
+        centroid: [lat, lon],
+        isPoint: true,
+      });
+    } catch (e) {
+      console.error('Adres zoeken mislukt:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="search-bar">
       <div className="search-input-wrapper">
         <input
           type="text"
-          placeholder="Zoek wijk of straat..."
+          placeholder="Zoek wijk, straat of adres..."
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -104,19 +136,30 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
         {loading && <span className="search-loading">Laden...</span>}
         {showSuggestions && suggestions.length > 0 && (
           <ul className="suggestions">
-            {suggestions.map((s) =>
-              s.type === 'wijk' ? (
-                <li key={`wijk-${s.code}`} onClick={() => handleSelectWijk(s)}>
-                  <span className="suggestion-name">{s.naam}</span>
-                  <span className="suggestion-code">wijk · {s.code}</span>
-                </li>
-              ) : (
+            {suggestions.map((s, i) => {
+              if (s.type === 'wijk') {
+                return (
+                  <li key={`wijk-${s.code}`} onClick={() => handleSelectWijk(s)}>
+                    <span className="suggestion-name">{s.naam}</span>
+                    <span className="suggestion-code">wijk · {s.code}</span>
+                  </li>
+                );
+              }
+              if (s.type === 'adres') {
+                return (
+                  <li key={`adres-${i}`} onClick={() => handleSelectAddress(s)}>
+                    <span className="suggestion-name">{s.naam}</span>
+                    <span className="suggestion-code">adres · {s.postcode}</span>
+                  </li>
+                );
+              }
+              return (
                 <li key={`straat-${s.identificatie}`} onClick={() => handleSelectStreet(s)}>
                   <span className="suggestion-name">{s.naam}</span>
                   <span className="suggestion-code">straat</span>
                 </li>
-              )
-            )}
+              );
+            })}
           </ul>
         )}
       </div>
@@ -138,7 +181,6 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
   );
 }
 
-// Flatten any GeoJSON geometry to a flat array of [lon, lat] pairs
 function extractCoords(geom) {
   if (!geom || !geom.coordinates) return [];
   const type = geom.type;
