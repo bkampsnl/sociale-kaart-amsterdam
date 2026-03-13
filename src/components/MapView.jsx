@@ -1,14 +1,50 @@
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import { useRef, useEffect, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 
-function getColor(value, higherIsWorse) {
-  if (value == null) return '#666';
+// Buurtfocus color scale (6 steps)
+export function getColor(value, higherIsWorse) {
+  if (value == null) return '#ccc';
   const v = higherIsWorse ? value : 1 - value;
-  if (v < 0.25) return '#2d8a4e';
-  if (v < 0.5) return '#a3be4c';
-  if (v < 0.75) return '#f0a030';
-  return '#d32f2f';
+  if (v < 0.15) return '#1a7a2f';   // dark green - ruim boven gemiddeld
+  if (v < 0.35) return '#7cba3f';   // light green - boven gemiddeld
+  if (v < 0.55) return '#f0dc32';   // yellow - rond gemiddeld
+  if (v < 0.75) return '#f0961e';   // orange - onder gemiddeld
+  if (v < 0.9) return '#e6321e';    // red - ruim onder gemiddeld
+  return '#8b1a1a';                 // dark red - veel lager
+}
+
+export function normalizeValues(kerncijfers, indicatorId) {
+  if (!kerncijfers) return {};
+  const values = kerncijfers[indicatorId] || {};
+  const nums = Object.values(values).filter((v) => v != null);
+  if (nums.length === 0) return {};
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  const range = max - min || 1;
+  const result = {};
+  for (const [code, val] of Object.entries(values)) {
+    result[code] = (val - min) / range;
+  }
+  return result;
+}
+
+function FlyToArea({ geojson, selectedGebied }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedGebied || !geojson) return;
+    const feature = geojson.features.find(
+      (f) => f.properties.code === selectedGebied.code
+    );
+    if (feature) {
+      const L = window.L || require('leaflet');
+      const layer = L.geoJSON(feature);
+      map.flyToBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 14 });
+    }
+  }, [selectedGebied?.code]);
+
+  return null;
 }
 
 export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, onSelectGebied }) {
@@ -16,17 +52,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
 
   const normalized = useMemo(() => {
     if (!kerncijfers || !selectedIndicator) return {};
-    const values = kerncijfers[selectedIndicator.id] || {};
-    const nums = Object.values(values).filter((v) => v != null);
-    if (nums.length === 0) return {};
-    const min = Math.min(...nums);
-    const max = Math.max(...nums);
-    const range = max - min || 1;
-    const result = {};
-    for (const [code, val] of Object.entries(values)) {
-      result[code] = (val - min) / range;
-    }
-    return result;
+    return normalizeValues(kerncijfers, selectedIndicator.id);
   }, [kerncijfers, selectedIndicator]);
 
   const style = (feature) => {
@@ -36,8 +62,8 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
     return {
       fillColor: getColor(value, selectedIndicator?.higherIsWorse),
       weight: isSelected ? 3 : 1,
-      color: isSelected ? '#fff' : '#444',
-      fillOpacity: isSelected ? 0.9 : 0.7,
+      color: isSelected ? '#1a3a6e' : '#888',
+      fillOpacity: isSelected ? 0.9 : 0.75,
     };
   };
 
@@ -64,8 +90,8 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
       zoomControl={true}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; OpenStreetMap contributors'
       />
       <GeoJSON
         key={selectedIndicator?.id || 'default'}
@@ -74,6 +100,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
         style={style}
         onEachFeature={onEachFeature}
       />
+      <FlyToArea geojson={geojson} selectedGebied={selectedGebied} />
     </MapContainer>
   );
 }

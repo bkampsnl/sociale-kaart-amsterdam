@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import MapView from './components/MapView';
-import DetailPanel from './components/DetailPanel';
+import DataTable from './components/DataTable';
 import SearchBar from './components/SearchBar';
 import { fetchGebieden, fetchAllKerncijfers, INDICATORS } from './api';
 import { gebiedenToGeoJSON } from './geo';
@@ -40,28 +40,25 @@ export default function App() {
         selectedIndicator={selectedIndicator}
         onSelectIndicator={setSelectedIndicator}
       />
-      <div className="main-content">
-        <div className="map-container">
-          {loading ? (
-            <div className="map-loading">Data laden van Amsterdam API...</div>
-          ) : (
-            <MapView
-              geojson={geojson}
-              kerncijfers={kerncijfers}
-              selectedIndicator={selectedIndicator}
-              selectedGebied={selectedGebied}
-              onSelectGebied={setSelectedGebied}
-            />
-          )}
-          <div className="legend">
-            <span className="legend-item" style={{ background: '#2d8a4e' }}></span> Goed
-            <span className="legend-item" style={{ background: '#a3be4c' }}></span> Gemiddeld
-            <span className="legend-item" style={{ background: '#f0a030' }}></span> Aandacht
-            <span className="legend-item" style={{ background: '#d32f2f' }}></span> Kwetsbaar
-          </div>
-        </div>
-        <DetailPanel gebied={selectedGebied} kerncijfers={kerncijfers} />
+      <div className="map-section">
+        {loading ? (
+          <div className="map-loading">Data laden van Amsterdam API...</div>
+        ) : (
+          <MapView
+            geojson={geojson}
+            kerncijfers={kerncijfers}
+            selectedIndicator={selectedIndicator}
+            selectedGebied={selectedGebied}
+            onSelectGebied={setSelectedGebied}
+          />
+        )}
       </div>
+      <DataTable
+        gebieden={gebieden}
+        kerncijfers={kerncijfers}
+        selectedGebied={selectedGebied}
+        onSelectGebied={setSelectedGebied}
+      />
     </div>
   );
 }
