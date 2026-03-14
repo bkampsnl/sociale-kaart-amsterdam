@@ -65,6 +65,7 @@ export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebi
       : sorted;
 
   if (!kerncijfers || sorted.length === 0) return null;
+  if (selectedGebied) return null;
 
   return (
     <div className="data-table-container">
