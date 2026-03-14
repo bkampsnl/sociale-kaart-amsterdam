@@ -177,7 +177,7 @@ export default function OpvangFilter({ onLocatiesChange, onAsielLocatiesChange }
                   </label>
                 ))}
 
-                <div className="opvang-divider">Asielopvang Nieuw-West</div>
+                <div className="opvang-divider">Asielopvang</div>
 
                 {ASIEL_SOORT_ORDER.map((soort) => (
                   <label key={soort} className="opvang-item">
