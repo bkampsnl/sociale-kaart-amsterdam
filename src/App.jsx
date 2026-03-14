@@ -4,6 +4,7 @@ import MapView from './components/MapView';
 import DataTable from './components/DataTable';
 import ScorePanel from './components/ScorePanel';
 import SearchBar from './components/SearchBar';
+import OpvangFilter from './components/OpvangFilter';
 import { fetchGebieden, fetchAllKerncijfers, INDICATORS } from './api';
 import { gebiedenToGeoJSON } from './geo';
 
@@ -16,6 +17,7 @@ export default function App() {
   const [selectedIndicator, setSelectedIndicator] = useState(INDICATORS[0]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [opvangLocaties, setOpvangLocaties] = useState([]);
 
   useEffect(() => {
     async function loadData() {
@@ -48,14 +50,18 @@ export default function App() {
         {loading ? (
           <div className="map-loading">Data laden van Amsterdam API...</div>
         ) : (
-          <MapView
-            geojson={geojson}
-            kerncijfers={kerncijfers}
-            selectedIndicator={selectedIndicator}
-            selectedGebied={selectedGebied}
-            selectedStreet={selectedStreet}
-            onSelectGebied={setSelectedGebied}
-          />
+          <>
+            <OpvangFilter onLocatiesChange={setOpvangLocaties} />
+            <MapView
+              geojson={geojson}
+              kerncijfers={kerncijfers}
+              selectedIndicator={selectedIndicator}
+              selectedGebied={selectedGebied}
+              selectedStreet={selectedStreet}
+              onSelectGebied={setSelectedGebied}
+              opvangLocaties={opvangLocaties}
+            />
+          </>
         )}
       </div>
       <ScorePanel

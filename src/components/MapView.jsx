@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import { useRef, useEffect, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
+import { getOpvangColor } from './OpvangFilter';
 
 // Buurtfocus color scale (6 steps)
 export function getColor(value, higherIsWorse) {
@@ -128,7 +129,55 @@ function StreetHighlight({ selectedStreet }) {
   return null;
 }
 
-export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied }) {
+function OpvangMarkers({ locaties }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+
+  useEffect(() => {
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+      layerRef.current = null;
+    }
+    if (!locaties || locaties.length === 0) return;
+
+    const group = L.layerGroup();
+    for (const loc of locaties) {
+      if (!loc.geometry?.coordinates) continue;
+      const [lon, lat] = loc.geometry.coordinates;
+      const soort = loc.soort && loc.soort !== '[LEEG]' ? loc.soort : 'Overig';
+      const color = getOpvangColor(soort);
+      const marker = L.circleMarker([lat, lon], {
+        radius: 7,
+        fillColor: color,
+        color: '#fff',
+        weight: 2,
+        fillOpacity: 0.9,
+      });
+      const adres = `${loc.straat || ''} ${loc.huisnummer || ''}`.trim();
+      marker.bindPopup(
+        `<strong>${loc.naam}</strong><br/>` +
+        `<em>${soort}</em><br/>` +
+        `${adres}${loc.postcode ? ', ' + loc.postcode : ''}<br/>` +
+        `${loc.stadsdeel || ''}`
+      );
+      marker.bindTooltip(loc.naam, { direction: 'top', offset: [0, -8] });
+      group.addLayer(marker);
+    }
+    group.addTo(map);
+    layerRef.current = group;
+
+    return () => {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [locaties, map]);
+
+  return null;
+}
+
+export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied, opvangLocaties }) {
   const geoJsonRef = useRef();
 
   const normalized = useMemo(() => {
@@ -183,6 +232,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
       />
       <FlyToArea geojson={geojson} selectedGebied={selectedGebied} selectedStreet={selectedStreet} />
       <StreetHighlight selectedStreet={selectedStreet} />
+      <OpvangMarkers locaties={opvangLocaties} />
     </MapContainer>
   );
 }

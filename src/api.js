@@ -169,6 +169,18 @@ export async function fetchMeldingen(wijkCode, limit = 100) {
   return data._embedded.meldingen;
 }
 
+export async function fetchOpvanglocaties() {
+  const all = [];
+  let url = `${BASE}/maatschappelijke_voorzieningen/voorzieningen_op_de_kaart/?categorie=Opvanglocatie&_format=json&_pageSize=200`;
+  while (url) {
+    const res = await fetch(url);
+    const data = await res.json();
+    all.push(...data._embedded.voorzieningen_op_de_kaart);
+    url = data._links.next?.href || null;
+  }
+  return all;
+}
+
 export async function fetchMeldingenByCategorie(wijkCode) {
   const meldingen = await fetchMeldingen(wijkCode, 500);
   const counts = {};
