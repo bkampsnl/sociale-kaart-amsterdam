@@ -200,11 +200,10 @@ function AsielMarkers({ locaties }) {
       });
       let popupHtml =
         `<strong>${loc.naam}</strong><br/>` +
+        `${loc.adres}<br/>` +
         `<em>${loc.soort}</em><br/>` +
         `Doelgroep: ${loc.doelgroep}<br/>` +
-        `${loc.adres}<br/>` +
-        `Capaciteit: <strong>${loc.capaciteit}</strong> plekken<br/>` +
-        `Status: ${loc.status}`;
+        `Capaciteit: <strong>${loc.capaciteit}</strong> plekken`;
       if (loc.extra) popupHtml += `<br/>${loc.extra}`;
       marker.bindPopup(popupHtml);
       marker.bindTooltip(`${loc.naam} (${loc.capaciteit})`, { direction: 'top', offset: [0, -10] });
