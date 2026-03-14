@@ -75,18 +75,10 @@ function barWidth(val, ind) {
 }
 
 function barColor(val, ind) {
-  const w = barWidth(val, ind);
-  if (ind.higherIsWorse) {
-    if (w < 25) return '#1a7a2f';
-    if (w < 45) return '#7cba3f';
-    if (w < 60) return '#f0dc32';
-    if (w < 75) return '#f0961e';
-    return '#e6321e';
-  }
-  // Higher is better (rapportcijfers)
-  if (w >= 75) return '#1a7a2f';
-  if (w >= 60) return '#7cba3f';
-  if (w >= 45) return '#f0dc32';
-  if (w >= 30) return '#f0961e';
-  return '#e6321e';
+  const label = ind.interpret(val);
+  const good = ['Laag', 'Weinig', 'Goed', 'Voldoende', 'Sterk'].includes(label);
+  const bad = ['Hoog', 'Zeer hoog', 'Veel', 'Zeer veel', 'Onvoldoende', 'Zwak', 'Slecht', 'Kritiek'].includes(label);
+  if (good) return '#1a7a2f';
+  if (bad) return '#e6321e';
+  return '#f0961e';
 }
