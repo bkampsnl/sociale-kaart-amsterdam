@@ -18,6 +18,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [opvangLocaties, setOpvangLocaties] = useState([]);
+  const [asielLocaties, setAsielLocaties] = useState([]);
 
   useEffect(() => {
     async function loadData() {
@@ -51,7 +52,7 @@ export default function App() {
           <div className="map-loading">Data laden van Amsterdam API...</div>
         ) : (
           <>
-            <OpvangFilter onLocatiesChange={setOpvangLocaties} />
+            <OpvangFilter onLocatiesChange={setOpvangLocaties} onAsielLocatiesChange={setAsielLocaties} />
             <MapView
               geojson={geojson}
               kerncijfers={kerncijfers}
@@ -60,6 +61,7 @@ export default function App() {
               selectedStreet={selectedStreet}
               onSelectGebied={setSelectedGebied}
               opvangLocaties={opvangLocaties}
+              asielLocaties={asielLocaties}
             />
           </>
         )}

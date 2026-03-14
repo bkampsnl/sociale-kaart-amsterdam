@@ -177,7 +177,53 @@ function OpvangMarkers({ locaties }) {
   return null;
 }
 
-export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied, opvangLocaties }) {
+function AsielMarkers({ locaties }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+
+  useEffect(() => {
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+      layerRef.current = null;
+    }
+    if (!locaties || locaties.length === 0) return;
+
+    const group = L.layerGroup();
+    for (const loc of locaties) {
+      const color = getOpvangColor(loc.soort);
+      const marker = L.circleMarker([loc.lat, loc.lon], {
+        radius: 9,
+        fillColor: color,
+        color: '#fff',
+        weight: 3,
+        fillOpacity: 0.9,
+      });
+      marker.bindPopup(
+        `<strong>${loc.naam}</strong><br/>` +
+        `<em>${loc.soort}</em><br/>` +
+        `Doelgroep: ${loc.doelgroep}<br/>` +
+        `${loc.adres}<br/>` +
+        `Capaciteit: <strong>${loc.capaciteit}</strong> plekken<br/>` +
+        `Status: ${loc.status}`
+      );
+      marker.bindTooltip(`${loc.naam} (${loc.capaciteit})`, { direction: 'top', offset: [0, -10] });
+      group.addLayer(marker);
+    }
+    group.addTo(map);
+    layerRef.current = group;
+
+    return () => {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [locaties, map]);
+
+  return null;
+}
+
+export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied, opvangLocaties, asielLocaties }) {
   const geoJsonRef = useRef();
 
   const normalized = useMemo(() => {
@@ -233,6 +279,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
       <FlyToArea geojson={geojson} selectedGebied={selectedGebied} selectedStreet={selectedStreet} />
       <StreetHighlight selectedStreet={selectedStreet} />
       <OpvangMarkers locaties={opvangLocaties} />
+      <AsielMarkers locaties={asielLocaties} />
     </MapContainer>
   );
 }
