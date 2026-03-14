@@ -37,16 +37,27 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
   useEffect(() => {
     if (selectedStreet?.geometry) {
       if (selectedStreet.isPoint) {
-        // Address: fly to point at high zoom
         map.flyTo(selectedStreet.centroid, 17, { duration: 1.5 });
       } else {
-        // Street: fly to bounds
         const layer = L.geoJSON(selectedStreet.geometry);
         map.flyToBounds(layer.getBounds(), { padding: [80, 80], maxZoom: 15 });
       }
       return;
     }
     if (!selectedGebied || !geojson) return;
+
+    // Stadsdeel selected: zoom to all wijken in that stadsdeel
+    if (selectedGebied.stadsdeel) {
+      const features = geojson.features.filter(
+        (f) => f.properties.stadsdeel === selectedGebied.stadsdeel
+      );
+      if (features.length > 0) {
+        const group = L.geoJSON({ type: 'FeatureCollection', features });
+        map.flyToBounds(group.getBounds(), { padding: [60, 60], maxZoom: 13 });
+      }
+      return;
+    }
+
     const feature = geojson.features.find(
       (f) => f.properties.code === selectedGebied.code
     );
@@ -54,7 +65,7 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
       const layer = L.geoJSON(feature);
       map.flyToBounds(layer.getBounds(), { padding: [200, 200], maxZoom: 12 });
     }
-  }, [selectedGebied?.code, selectedStreet, geojson, map]);
+  }, [selectedGebied?.code, selectedGebied?.stadsdeel, selectedStreet, geojson, map]);
 
   return null;
 }
@@ -223,6 +234,48 @@ function AsielMarkers({ locaties }) {
   return null;
 }
 
+const FOCUS_STADSDEEL = 'Nieuw-West';
+
+function StadsdeelHighlight({ geojson }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+
+  useEffect(() => {
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+      layerRef.current = null;
+    }
+    if (!geojson) return;
+
+    const features = geojson.features.filter(
+      (f) => f.properties.stadsdeel === FOCUS_STADSDEEL
+    );
+    if (features.length === 0) return;
+
+    const layer = L.geoJSON({ type: 'FeatureCollection', features }, {
+      style: {
+        fill: false,
+        color: '#1a3a6e',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: null,
+      },
+      interactive: false,
+    });
+    layer.addTo(map);
+    layerRef.current = layer;
+
+    return () => {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [geojson, map]);
+
+  return null;
+}
+
 export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied, opvangLocaties, asielLocaties }) {
   const geoJsonRef = useRef();
 
@@ -276,6 +329,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
         style={style}
         onEachFeature={onEachFeature}
       />
+      <StadsdeelHighlight geojson={geojson} />
       <FlyToArea geojson={geojson} selectedGebied={selectedGebied} selectedStreet={selectedStreet} />
       <StreetHighlight selectedStreet={selectedStreet} />
       <OpvangMarkers locaties={opvangLocaties} />

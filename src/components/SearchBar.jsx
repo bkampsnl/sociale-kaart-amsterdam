@@ -16,16 +16,25 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
 
     const { street, number } = parseAddressQuery(query);
 
-    // Local wijk matches (instant) - only if no house number
+    // Local wijk + stadsdeel matches (instant) - only if no house number
     const q = query.toLowerCase();
-    const wijkMatches = number
-      ? []
-      : gebieden
-          .filter((g) => g.naam.toLowerCase().includes(q) || g.code.toLowerCase().includes(q))
-          .slice(0, 5)
-          .map((g) => ({ ...g, type: 'wijk' }));
+    if (number) {
+      setSuggestions([]);
+    } else {
+      // Stadsdeel matches
+      const stadsdeelNamen = [...new Set(gebieden.map((g) => g._links?.ligtInStadsdeel?.title).filter(Boolean))];
+      const stadsdeelMatches = stadsdeelNamen
+        .filter((s) => s.toLowerCase().includes(q))
+        .map((s) => ({ naam: s, type: 'stadsdeel' }));
 
-    setSuggestions(wijkMatches);
+      // Wijk matches
+      const wijkMatches = gebieden
+        .filter((g) => g.naam.toLowerCase().includes(q) || g.code.toLowerCase().includes(q))
+        .slice(0, 5)
+        .map((g) => ({ ...g, type: 'wijk' }));
+
+      setSuggestions([...stadsdeelMatches, ...wijkMatches]);
+    }
 
     // Debounced API search
     clearTimeout(debounceRef.current);
@@ -60,6 +69,13 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
 
     return () => clearTimeout(debounceRef.current);
   }, [query, gebieden]);
+
+  const handleSelectStadsdeel = (naam) => {
+    setQuery(naam);
+    setShowSuggestions(false);
+    onSelectGebied({ stadsdeel: naam });
+    onSelectStreet(null);
+  };
 
   const handleSelectWijk = (gebied) => {
     setQuery(gebied.naam);
@@ -137,6 +153,14 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
         {showSuggestions && suggestions.length > 0 && (
           <ul className="suggestions">
             {suggestions.map((s, i) => {
+              if (s.type === 'stadsdeel') {
+                return (
+                  <li key={`sd-${s.naam}`} onClick={() => handleSelectStadsdeel(s.naam)}>
+                    <span className="suggestion-name">{s.naam}</span>
+                    <span className="suggestion-code">stadsdeel</span>
+                  </li>
+                );
+              }
               if (s.type === 'wijk') {
                 return (
                   <li key={`wijk-${s.code}`} onClick={() => handleSelectWijk(s)}>

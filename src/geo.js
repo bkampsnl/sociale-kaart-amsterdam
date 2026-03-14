@@ -33,6 +33,7 @@ export function gebiedenToGeoJSON(gebieden) {
           code: g.code,
           naam: g.naam,
           identificatie: g.identificatie,
+          stadsdeel: g._links?.ligtInStadsdeel?.title || '',
         },
         geometry: convertGeometry(g.geometrie),
       })),
