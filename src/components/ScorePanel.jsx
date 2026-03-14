@@ -2,7 +2,7 @@ import { INDICATORS } from '../api';
 import { getColor, normalizeValues } from './MapView';
 
 export default function ScorePanel({ kerncijfers, selectedGebied }) {
-  if (!selectedGebied || !kerncijfers) return null;
+  if (!selectedGebied || !kerncijfers || (selectedGebied.stadsdeel && !selectedGebied.code)) return null;
 
   return (
     <div className="score-panel">

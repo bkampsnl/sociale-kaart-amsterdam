@@ -50,16 +50,16 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
         } else {
           // Street-only search
           const streets = await searchStreets(query);
-          const seen = new Set(wijkMatches.map((w) => w.naam.toLowerCase()));
-          const unique = streets.filter((s) => {
-            const key = s.naam.toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
           setSuggestions((prev) => {
-            const wijken = prev.filter((s) => s.type === 'wijk');
-            return [...wijken, ...unique];
+            const existing = prev.filter((s) => s.type === 'wijk' || s.type === 'stadsdeel');
+            const seen = new Set(existing.map((w) => w.naam.toLowerCase()));
+            const unique = streets.filter((s) => {
+              const key = s.naam.toLowerCase();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+            return [...existing, ...unique];
           });
         }
       } catch {

@@ -46,8 +46,8 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
     }
     if (!selectedGebied || !geojson) return;
 
-    // Stadsdeel selected: zoom to all wijken in that stadsdeel
-    if (selectedGebied.stadsdeel) {
+    // Stadsdeel selected (no code = pure stadsdeel selection from search)
+    if (selectedGebied.stadsdeel && !selectedGebied.code) {
       const features = geojson.features.filter(
         (f) => f.properties.stadsdeel === selectedGebied.stadsdeel
       );

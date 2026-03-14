@@ -72,6 +72,7 @@ export default function App() {
       />
       <DataTable
         gebieden={gebieden}
+        geojson={geojson}
         kerncijfers={kerncijfers}
         selectedGebied={selectedGebied}
         selectedStreet={selectedStreet}

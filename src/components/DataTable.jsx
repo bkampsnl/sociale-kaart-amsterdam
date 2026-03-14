@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { INDICATORS } from '../api';
 import { getColor, normalizeValues } from './MapView';
 
-export default function DataTable({ gebieden, kerncijfers, selectedGebied, selectedStreet, onSelectGebied, selectedIndicator }) {
+export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebied, selectedStreet, onSelectGebied, selectedIndicator }) {
   const normalizedMap = useMemo(() => {
     if (!kerncijfers) return {};
     const map = {};
@@ -28,19 +28,34 @@ export default function DataTable({ gebieden, kerncijfers, selectedGebied, selec
       });
   }, [gebieden, kerncijfers, selectedIndicator]);
 
+  // When a stadsdeel is selected, show wijken in that stadsdeel
   // When a wijk is selected, show only that row; otherwise show all
-  const displayRows = selectedGebied
-    ? sorted.filter((g) => g.code === selectedGebied.code)
-    : sorted;
+  const stadsdeelCodes = useMemo(() => {
+    if (!selectedGebied?.stadsdeel || selectedGebied?.code || !geojson) return null;
+    return new Set(
+      geojson.features
+        .filter((f) => f.properties.stadsdeel === selectedGebied.stadsdeel)
+        .map((f) => f.properties.code)
+    );
+  }, [selectedGebied?.stadsdeel, geojson]);
+
+  const isStadsdeelOnly = selectedGebied?.stadsdeel && !selectedGebied?.code;
+  const displayRows = isStadsdeelOnly
+    ? sorted.filter((g) => stadsdeelCodes?.has(g.code))
+    : selectedGebied?.code
+      ? sorted.filter((g) => g.code === selectedGebied.code)
+      : sorted;
 
   if (!kerncijfers || sorted.length === 0) return null;
 
   return (
     <div className="data-table-container">
       <h3>
-        {selectedGebied
-          ? `Details: ${selectedGebied.naam}${selectedStreet ? ` — ${selectedStreet.naam}` : ''}`
-          : `Overzicht alle wijken — gesorteerd op: ${selectedIndicator.label}`}
+        {isStadsdeelOnly
+          ? `Wijken in ${selectedGebied.stadsdeel} — gesorteerd op: ${selectedIndicator.label}`
+          : selectedGebied?.code
+            ? `Details: ${selectedGebied.naam}${selectedStreet ? ` — ${selectedStreet.naam}` : ''}`
+            : `Overzicht alle wijken — gesorteerd op: ${selectedIndicator.label}`}
       </h3>
       {selectedGebied && (
         <button className="clear-selection" onClick={() => onSelectGebied(null)}>
