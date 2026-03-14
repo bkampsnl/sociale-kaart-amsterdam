@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import MapView from './components/MapView';
 import DataTable from './components/DataTable';
+import ScorePanel from './components/ScorePanel';
 import SearchBar from './components/SearchBar';
 import { fetchGebieden, fetchAllKerncijfers, INDICATORS } from './api';
 import { gebiedenToGeoJSON } from './geo';
@@ -57,6 +58,10 @@ export default function App() {
           />
         )}
       </div>
+      <ScorePanel
+        kerncijfers={kerncijfers}
+        selectedGebied={selectedGebied}
+      />
       <DataTable
         gebieden={gebieden}
         kerncijfers={kerncijfers}

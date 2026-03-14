@@ -14,15 +14,60 @@ export async function fetchGebieden() {
 }
 
 export const INDICATORS = [
-  { id: 'VMISDRIJF_1000INW', label: 'Misdrijven per 1.000 inwoners', category: 'criminaliteit', higherIsWorse: true },
-  { id: 'VBUURTVEILIG_R', label: 'Veiligheid buurt (1-10)', category: 'veiligheid', higherIsWorse: false },
-  { id: 'LOVERL_P', label: 'Overlast: % veel', category: 'overlast', higherIsWorse: true },
-  { id: 'SKKWETS34_P', label: 'Kwetsbaarheidsscore hoog (%)', category: 'kwetsbaarheid', higherIsWorse: true },
-  { id: 'LSOCCOH_R', label: 'Sociale cohesie (1-10)', category: 'sociaal', higherIsWorse: false },
-  { id: 'SKSES234_P', label: 'SES laag (%)', category: 'kwetsbaarheid', higherIsWorse: true },
-  { id: 'VDRUGSGEBR_P', label: 'Overlast: drugsgebruik (%)', category: 'overlast', higherIsWorse: true },
-  { id: 'LJONGERENOVL_P', label: 'Overlast: jongeren (%)', category: 'overlast', higherIsWorse: true },
-  { id: 'VCRIMI_P', label: 'Criminaliteit: % veel', category: 'criminaliteit', higherIsWorse: true },
+  {
+    id: 'VMISDRIJF_1000INW', label: 'Misdrijven per 1.000 inwoners', category: 'criminaliteit', higherIsWorse: true,
+    description: 'Aantal geregistreerde misdrijven per 1.000 inwoners in deze wijk.',
+    scale: 'aantal',
+    interpret: (v) => v < 40 ? 'Laag' : v < 70 ? 'Gemiddeld' : v < 100 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'VBUURTVEILIG_R', label: 'Veiligheid buurt (1-10)', category: 'veiligheid', higherIsWorse: false,
+    description: 'Rapportcijfer (1-10) dat bewoners geven voor de veiligheid in hun buurt. Gebaseerd op de Veiligheidsmonitor.',
+    scale: '1-10',
+    interpret: (v) => v >= 7.5 ? 'Goed' : v >= 6.5 ? 'Voldoende' : v >= 5.5 ? 'Matig' : 'Onvoldoende',
+  },
+  {
+    id: 'LOVERL_P', label: 'Overlast: % veel', category: 'overlast', higherIsWorse: true,
+    description: 'Percentage bewoners dat aangeeft veel overlast te ervaren in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 35 ? 'Veel' : 'Zeer veel',
+  },
+  {
+    id: 'SKKWETS34_P', label: 'Kwetsbaarheidsscore hoog (%)', category: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage bewoners met een hoge kwetsbaarheidsscore. Combineert factoren als inkomen, gezondheid en sociaal isolement.',
+    scale: 'percentage',
+    interpret: (v) => v < 15 ? 'Laag' : v < 30 ? 'Gemiddeld' : v < 45 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'LSOCCOH_R', label: 'Sociale cohesie (1-10)', category: 'sociaal', higherIsWorse: false,
+    description: 'Rapportcijfer (1-10) voor sociale samenhang in de buurt. Meet onderlinge betrokkenheid, vertrouwen en contact tussen bewoners.',
+    scale: '1-10',
+    interpret: (v) => v >= 7 ? 'Sterk' : v >= 6 ? 'Voldoende' : v >= 5 ? 'Matig' : 'Zwak',
+  },
+  {
+    id: 'SKSES234_P', label: 'SES laag (%)', category: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage bewoners met een lage sociaaleconomische status (SES). Gebaseerd op opleiding, inkomen en arbeidsmarktpositie.',
+    scale: 'percentage',
+    interpret: (v) => v < 20 ? 'Laag' : v < 40 ? 'Gemiddeld' : v < 60 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'VDRUGSGEBR_P', label: 'Overlast: drugsgebruik (%)', category: 'overlast', higherIsWorse: true,
+    description: 'Percentage bewoners dat overlast ervaart door drugsgebruik in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 5 ? 'Weinig' : v < 15 ? 'Gemiddeld' : v < 25 ? 'Veel' : 'Zeer veel',
+  },
+  {
+    id: 'LJONGERENOVL_P', label: 'Overlast: jongeren (%)', category: 'overlast', higherIsWorse: true,
+    description: 'Percentage bewoners dat overlast ervaart door groepen jongeren in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 30 ? 'Veel' : 'Zeer veel',
+  },
+  {
+    id: 'VCRIMI_P', label: 'Criminaliteit: % veel', category: 'criminaliteit', higherIsWorse: true,
+    description: 'Percentage bewoners dat aangeeft veel criminaliteit te ervaren in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 35 ? 'Veel' : 'Zeer veel',
+  },
 ];
 
 export async function fetchKerncijfers(indicatorId, jaar = 2024) {

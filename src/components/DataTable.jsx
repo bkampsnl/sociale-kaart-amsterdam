@@ -55,7 +55,7 @@ export default function DataTable({ gebieden, kerncijfers, selectedGebied, selec
               {INDICATORS.map((ind) => (
                 <th
                   key={ind.id}
-                  title={ind.label}
+                  title={`${ind.label}\n${ind.description}\nSchaal: ${ind.scale === '1-10' ? 'rapportcijfer 1-10 (hoger = beter)' : ind.scale === 'percentage' ? 'percentage (lager = beter)' : 'aantal per 1.000 inwoners (lager = beter)'}`}
                   className={ind.id === selectedIndicator.id ? 'th-active' : ''}
                 >
                   {shortLabel(ind.label)}
