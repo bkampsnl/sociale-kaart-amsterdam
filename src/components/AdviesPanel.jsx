@@ -177,17 +177,17 @@ export default function AdviesPanel({ kerncijfers, selectedGebied, selectedStree
 
       {result.nearby.length > 0 && (
         <div className="advies-nearby">
-          <h4>Bestaande opvang binnen 3 km</h4>
+          <h4>Bestaande opvang in de buurt</h4>
           {result.nearby.map((loc, i) => (
             <div key={i} className="advies-nearby-item">
               <span className="advies-nearby-name">{loc.naam}</span>
               <span className="advies-nearby-info">
-                {loc.capaciteit} plekken · {loc.dist.toFixed(1)} km
+                {loc.capaciteit} plekken · {Math.round(loc.dist * 12)} min lopen
               </span>
             </div>
           ))}
           <div className="advies-nearby-total">
-            Totaal: <strong>{result.totalCap} plekken</strong> binnen 3 km
+            Totaal: <strong>{result.totalCap} plekken</strong> binnen 35 min lopen
           </div>
         </div>
       )}
