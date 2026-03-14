@@ -580,6 +580,7 @@ body {
   padding: 16px 20px;
   background: var(--bg-white);
   border-bottom: 1px solid var(--border);
+  max-width: 700px;
 }
 
 .advies-inline-header {
