@@ -63,7 +63,7 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
     );
     if (feature) {
       const layer = L.geoJSON(feature);
-      map.flyToBounds(layer.getBounds(), { padding: [200, 200], maxZoom: 12 });
+      map.flyToBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 15 });
     }
   }, [selectedGebied?.code, selectedGebied?.stadsdeel, selectedStreet, geojson, map]);
 

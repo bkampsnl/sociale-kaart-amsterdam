@@ -43,10 +43,19 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
         if (number && street.length >= 2) {
           // Address search (street + house number)
           const addresses = await searchAddresses(street, number);
-          setSuggestions((prev) => {
-            const wijken = prev.filter((s) => s.type === 'wijk');
-            return [...wijken, ...addresses.slice(0, 8)];
-          });
+          if (addresses.length > 0) {
+            setSuggestions((prev) => {
+              const wijken = prev.filter((s) => s.type === 'wijk');
+              return [...wijken, ...addresses.slice(0, 8)];
+            });
+          } else {
+            // No address found, fall back to street search
+            const streets = await searchStreets(street);
+            setSuggestions((prev) => {
+              const existing = prev.filter((s) => s.type === 'wijk' || s.type === 'stadsdeel');
+              return [...existing, ...streets];
+            });
+          }
         } else {
           // Street-only search
           const streets = await searchStreets(query);
