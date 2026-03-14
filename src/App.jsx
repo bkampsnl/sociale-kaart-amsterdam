@@ -54,11 +54,6 @@ export default function App() {
         ) : (
           <>
             <OpvangFilter onLocatiesChange={setOpvangLocaties} onAsielLocatiesChange={setAsielLocaties} />
-            <AdviesPanel
-              kerncijfers={kerncijfers}
-              onSelectGebied={setSelectedGebied}
-              onSelectStreet={setSelectedStreet}
-            />
             <MapView
               geojson={geojson}
               kerncijfers={kerncijfers}
@@ -75,6 +70,12 @@ export default function App() {
       <ScorePanel
         kerncijfers={kerncijfers}
         selectedGebied={selectedGebied}
+      />
+      <AdviesPanel
+        kerncijfers={kerncijfers}
+        selectedGebied={selectedGebied}
+        selectedStreet={selectedStreet}
+        geojson={geojson}
       />
       <DataTable
         gebieden={gebieden}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { INDICATORS, INDICATOR_GROUPS, parseAddressQuery, searchAddresses, searchStreets, fetchStreetGeometry, findWijkByCoord } from '../api';
+import { useMemo } from 'react';
+import { INDICATORS, INDICATOR_GROUPS } from '../api';
 import { normalizeValues, computeDraagkracht } from './MapView';
 import { ALL_CUSTOM_LOCATIES } from './OpvangFilter';
 
@@ -23,7 +23,6 @@ function groupScore(kerncijfers, groupKey, wijkCode) {
     const normalized = normalizeValues(kerncijfers, ind.id);
     const norm = normalized[wijkCode];
     if (norm == null) continue;
-    // Convert to goodness: 0 = bad, 1 = good
     sum += ind.higherIsWorse ? (1 - norm) : norm;
     count++;
   }
@@ -57,226 +56,139 @@ function generateAdvies(totalScore, groupScores) {
   return `Deze wijk is overbelast op meerdere indicatoren. Extra opvang wordt sterk afgeraden. Kritieke categorieën: ${weakGroups.join(', ') || 'meerdere'}.`;
 }
 
-export default function AdviesPanel({ kerncijfers, onSelectGebied, onSelectStreet }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
+export default function AdviesPanel({ kerncijfers, selectedGebied, selectedStreet, geojson }) {
+  // Only show when a specific wijk is selected (not stadsdeel-only)
+  const wijkCode = selectedGebied?.code;
 
-  const handleSearch = async () => {
-    if (!query || query.length < 3) return;
-    setLoading(true);
-    setError(null);
-    setResult(null);
+  const result = useMemo(() => {
+    if (!wijkCode || !kerncijfers) return null;
 
-    try {
-      const { street, number } = parseAddressQuery(query);
-      let lat, lon, adresNaam;
+    const draagkracht = computeDraagkracht(kerncijfers);
+    const totalScore = draagkracht[wijkCode];
+    if (totalScore == null) return null;
 
-      if (number && street.length >= 2) {
-        const addresses = await searchAddresses(street, number);
-        if (addresses.length > 0) {
-          const addr = addresses[0];
-          [lon, lat] = addr.geometry.coordinates;
-          adresNaam = addr.naam;
+    const groupScores = {};
+    for (const group of INDICATOR_GROUPS) {
+      groupScores[group.key] = groupScore(kerncijfers, group.key, wijkCode);
+    }
+
+    const indicatorDetails = {};
+    for (const ind of INDICATORS) {
+      const val = kerncijfers[ind.id]?.[wijkCode];
+      if (val != null) {
+        indicatorDetails[ind.id] = { value: val, label: ind.interpret(val) };
+      }
+    }
+
+    // Find centroid for nearby calculation
+    let lat = null, lon = null;
+    if (selectedStreet?.centroid) {
+      [lat, lon] = selectedStreet.centroid;
+    } else if (geojson) {
+      const feature = geojson.features.find((f) => f.properties.code === wijkCode);
+      if (feature) {
+        // Approximate centroid from bbox
+        const coords = feature.geometry.coordinates.flat(3);
+        const lats = [], lons = [];
+        for (let i = 0; i < coords.length; i += 2) {
+          lons.push(coords[i]);
+          lats.push(coords[i + 1]);
+        }
+        if (lats.length > 0) {
+          lat = lats.reduce((a, b) => a + b) / lats.length;
+          lon = lons.reduce((a, b) => a + b) / lons.length;
         }
       }
+    }
 
-      if (!lat) {
-        // Try street search
-        const streets = await searchStreets(street || query);
-        if (streets.length > 0) {
-          const detail = await fetchStreetGeometry(streets[0].identificatie);
-          if (detail.geometrie) {
-            const coords = flatCoords(detail.geometrie);
-            if (coords.length > 0) {
-              const centroid = coords.reduce(
-                (acc, [lo, la]) => [acc[0] + la / coords.length, acc[1] + lo / coords.length],
-                [0, 0]
-              );
-              lat = centroid[0];
-              lon = centroid[1];
-              adresNaam = streets[0].naam;
-            }
-          }
-        }
-      }
-
-      if (!lat || !lon) {
-        setError('Adres niet gevonden. Probeer een ander adres.');
-        return;
-      }
-
-      const wijk = await findWijkByCoord(lat, lon);
-      if (!wijk) {
-        setError('Geen wijk gevonden op deze locatie.');
-        return;
-      }
-
-      // Calculate scores
-      const draagkracht = computeDraagkracht(kerncijfers);
-      const totalScore = draagkracht[wijk.code];
-
-      const groupScores = {};
-      for (const group of INDICATOR_GROUPS) {
-        groupScores[group.key] = groupScore(kerncijfers, group.key, wijk.code);
-      }
-
-      // Find nearby opvang
-      const nearby = ALL_CUSTOM_LOCATIES
-        .map((loc) => ({
-          ...loc,
-          dist: haversineKm(lat, lon, loc.lat, loc.lon),
-        }))
+    let nearby = [];
+    let totalCap = 0;
+    if (lat && lon) {
+      nearby = ALL_CUSTOM_LOCATIES
+        .map((loc) => ({ ...loc, dist: haversineKm(lat, lon, loc.lat, loc.lon) }))
         .filter((loc) => loc.dist < 3)
         .sort((a, b) => a.dist - b.dist);
-
-      const totalCap = nearby.reduce((sum, loc) => sum + loc.capaciteit, 0);
-
-      // Get indicator details for this wijk
-      const indicatorDetails = {};
-      for (const ind of INDICATORS) {
-        const val = kerncijfers[ind.id]?.[wijk.code];
-        if (val != null) {
-          indicatorDetails[ind.id] = { value: val, label: ind.interpret(val) };
-        }
-      }
-
-      setResult({
-        adres: adresNaam,
-        wijk,
-        lat,
-        lon,
-        totalScore,
-        groupScores,
-        nearby,
-        totalCap,
-        indicatorDetails,
-        advies: generateAdvies(totalScore, groupScores),
-      });
-
-      // Also navigate the map
-      onSelectGebied({ code: wijk.code, naam: wijk.naam, identificatie: wijk.identificatie });
-      onSelectStreet({
-        naam: adresNaam,
-        geometry: { type: 'Point', coordinates: [lon, lat] },
-        centroid: [lat, lon],
-        isPoint: true,
-      });
-    } catch (e) {
-      setError('Fout bij zoeken: ' + e.message);
-    } finally {
-      setLoading(false);
+      totalCap = nearby.reduce((sum, loc) => sum + loc.capaciteit, 0);
     }
-  };
 
-  if (!open) {
-    return (
-      <button className="advies-open-btn" onClick={() => setOpen(true)}>
-        Locatie-advies
-      </button>
-    );
-  }
+    return {
+      totalScore,
+      groupScores,
+      indicatorDetails,
+      nearby,
+      totalCap,
+      advies: generateAdvies(totalScore, groupScores),
+    };
+  }, [wijkCode, kerncijfers, selectedStreet, geojson]);
+
+  if (!result) return null;
+
+  const level = getAdviesLevel(result.totalScore);
 
   return (
-    <div className="advies-panel">
-      <div className="advies-header">
-        <h3>Locatie-advies opvanglocatie</h3>
-        <button className="advies-close" onClick={() => { setOpen(false); setResult(null); }}>×</button>
-      </div>
-      <p className="advies-desc">
-        Voer een adres in om te beoordelen of de wijk geschikt is voor een nieuwe opvanglocatie.
-      </p>
-      <div className="advies-search">
-        <input
-          type="text"
-          placeholder="Adres invoeren, bv. Sloterweg 100"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button onClick={handleSearch} disabled={loading}>
-          {loading ? 'Analyseren...' : 'Analyseer'}
-        </button>
+    <div className="advies-inline">
+      <div className="advies-inline-header">
+        <div className="advies-total">
+          <div className="advies-total-score">
+            <span className="advies-score-number">{Math.round(result.totalScore * 100)}</span>
+            <span className="advies-score-label">/100</span>
+          </div>
+          <div className="advies-total-info">
+            <span className="advies-level" style={{ color: level.color }}>{level.label}</span>
+            <span className="advies-level-text">Draagkracht</span>
+          </div>
+        </div>
       </div>
 
-      {error && <div className="advies-error">{error}</div>}
+      <div className="advies-text">{result.advies}</div>
 
-      {result && (
-        <div className="advies-result">
-          <div className="advies-location">
-            <strong>{result.adres}</strong>
-            <span>Wijk: {result.wijk.naam}</span>
-          </div>
-
-          <div className="advies-total">
-            <div className="advies-total-score">
-              <span className="advies-score-number">{result.totalScore != null ? Math.round(result.totalScore * 100) : '?'}</span>
-              <span className="advies-score-label">/100</span>
-            </div>
-            <div className="advies-total-info">
-              <span
-                className="advies-level"
-                style={{ color: result.totalScore != null ? getAdviesLevel(result.totalScore).color : '#888' }}
-              >
-                {result.totalScore != null ? getAdviesLevel(result.totalScore).label : 'Onbekend'}
-              </span>
-              <span className="advies-level-text">Draagkracht</span>
-            </div>
-          </div>
-
-          <div className="advies-text">{result.advies}</div>
-
-          <div className="advies-groups">
-            {INDICATOR_GROUPS.map((group) => {
-              const score = result.groupScores[group.key];
-              const level = score != null ? getAdviesLevel(score) : null;
-              const groupInds = INDICATORS.filter((ind) => ind.group === group.key);
-              return (
-                <div key={group.key} className="advies-group">
-                  <div className="advies-group-header">
-                    <span>{level?.emoji || '⚪'} {group.label}</span>
-                    <span className="advies-group-score" style={{ color: level?.color || '#888' }}>
-                      {score != null ? Math.round(score * 100) : '?'}/100
-                    </span>
-                  </div>
-                  <div className="advies-group-details">
-                    {groupInds.map((ind) => {
-                      const detail = result.indicatorDetails[ind.id];
-                      if (!detail) return null;
-                      return (
-                        <div key={ind.id} className="advies-indicator">
-                          <span className="advies-ind-label">{ind.label}</span>
-                          <span className="advies-ind-value">{formatVal(detail.value, ind)}</span>
-                          <span className={`advies-ind-badge advies-badge-${badgeType(detail.label, ind)}`}>
-                            {detail.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {result.nearby.length > 0 && (
-            <div className="advies-nearby">
-              <h4>Bestaande opvang binnen 3 km</h4>
-              {result.nearby.map((loc, i) => (
-                <div key={i} className="advies-nearby-item">
-                  <span className="advies-nearby-name">{loc.naam}</span>
-                  <span className="advies-nearby-info">
-                    {loc.capaciteit} plekken · {loc.dist.toFixed(1)} km
-                  </span>
-                </div>
-              ))}
-              <div className="advies-nearby-total">
-                Totaal: <strong>{result.totalCap} plekken</strong> binnen 3 km
+      <div className="advies-groups">
+        {INDICATOR_GROUPS.map((group) => {
+          const score = result.groupScores[group.key];
+          const groupLevel = score != null ? getAdviesLevel(score) : null;
+          const groupInds = INDICATORS.filter((ind) => ind.group === group.key);
+          return (
+            <div key={group.key} className="advies-group">
+              <div className="advies-group-header">
+                <span>{groupLevel?.emoji || '⚪'} {group.label}</span>
+                <span className="advies-group-score" style={{ color: groupLevel?.color || '#888' }}>
+                  {score != null ? Math.round(score * 100) : '?'}/100
+                </span>
+              </div>
+              <div className="advies-group-details">
+                {groupInds.map((ind) => {
+                  const detail = result.indicatorDetails[ind.id];
+                  if (!detail) return null;
+                  return (
+                    <div key={ind.id} className="advies-indicator">
+                      <span className="advies-ind-label">{ind.label}</span>
+                      <span className="advies-ind-value">{formatVal(detail.value, ind)}</span>
+                      <span className={`advies-ind-badge advies-badge-${badgeType(detail.label, ind)}`}>
+                        {detail.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
+          );
+        })}
+      </div>
+
+      {result.nearby.length > 0 && (
+        <div className="advies-nearby">
+          <h4>Bestaande opvang binnen 3 km</h4>
+          {result.nearby.map((loc, i) => (
+            <div key={i} className="advies-nearby-item">
+              <span className="advies-nearby-name">{loc.naam}</span>
+              <span className="advies-nearby-info">
+                {loc.capaciteit} plekken · {loc.dist.toFixed(1)} km
+              </span>
+            </div>
+          ))}
+          <div className="advies-nearby-total">
+            Totaal: <strong>{result.totalCap} plekken</strong> binnen 3 km
+          </div>
         </div>
       )}
     </div>
@@ -296,14 +208,4 @@ function badgeType(label, ind) {
   const bad = ['Hoog', 'Zeer hoog', 'Veel', 'Zeer veel', 'Onvoldoende', 'Zwak', 'Slecht', 'Kritiek'].includes(label);
   if (ind.higherIsWorse) return good ? 'good' : bad ? 'bad' : 'mid';
   return good ? 'good' : bad ? 'bad' : 'mid';
-}
-
-function flatCoords(geom) {
-  if (!geom || !geom.coordinates) return [];
-  const type = geom.type;
-  if (type === 'Point') return [geom.coordinates];
-  if (type === 'MultiPoint' || type === 'LineString') return geom.coordinates;
-  if (type === 'MultiLineString' || type === 'Polygon') return geom.coordinates.flat();
-  if (type === 'MultiPolygon') return geom.coordinates.flat(2);
-  return [];
 }
