@@ -191,23 +191,7 @@ export default function OpvangFilter({ onLocatiesChange, onAsielLocatiesChange }
                 {activeSoorten.size === allSoorten.length ? 'Alles uit' : 'Alles aan'}
               </button>
               <div className="opvang-list">
-                {sortedSoorten.map((soort) => (
-                  <label key={soort} className="opvang-item">
-                    <input
-                      type="checkbox"
-                      checked={activeSoorten.has(soort)}
-                      onChange={() => toggleSoort(soort)}
-                    />
-                    <span
-                      className="opvang-dot"
-                      style={{ backgroundColor: getOpvangColor(soort) }}
-                    />
-                    <span className="opvang-soort-label">{soort}</span>
-                    <span className="opvang-count">{soortCounts[soort]}</span>
-                  </label>
-                ))}
-
-                <div className="opvang-divider">Asielopvang</div>
+                <div className="opvang-divider opvang-divider-first">Asielopvang</div>
 
                 {ASIEL_SOORT_ORDER.map((soort) => (
                   <label key={soort} className="opvang-item">
@@ -254,6 +238,24 @@ export default function OpvangFilter({ onLocatiesChange, onAsielLocatiesChange }
                     Capaciteit: {activeGemengdCap} woningen
                   </div>
                 )}
+
+                <div className="opvang-divider">Overige opvang (Amsterdam)</div>
+
+                {sortedSoorten.map((soort) => (
+                  <label key={soort} className="opvang-item">
+                    <input
+                      type="checkbox"
+                      checked={activeSoorten.has(soort)}
+                      onChange={() => toggleSoort(soort)}
+                    />
+                    <span
+                      className="opvang-dot"
+                      style={{ backgroundColor: getOpvangColor(soort) }}
+                    />
+                    <span className="opvang-soort-label">{soort}</span>
+                    <span className="opvang-count">{soortCounts[soort]}</span>
+                  </label>
+                ))}
               </div>
             </>
           )}

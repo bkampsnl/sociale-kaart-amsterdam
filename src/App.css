@@ -526,6 +526,11 @@ body {
   margin-top: 4px;
 }
 
+.opvang-divider-first {
+  border-top: none;
+  margin-top: 0;
+}
+
 .opvang-cap-total {
   font-size: 12px;
   font-weight: 600;
