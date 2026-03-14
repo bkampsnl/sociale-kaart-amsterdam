@@ -72,12 +72,6 @@ export default function App() {
         kerncijfers={kerncijfers}
         selectedGebied={selectedGebied}
       />
-      <AdviesPanel
-        kerncijfers={kerncijfers}
-        selectedGebied={selectedGebied}
-        selectedStreet={selectedStreet}
-        geojson={geojson}
-      />
       <DataTable
         gebieden={gebieden}
         geojson={geojson}
@@ -87,6 +81,12 @@ export default function App() {
         onSelectGebied={setSelectedGebied}
         onSelectStreet={setSelectedStreet}
         selectedIndicator={selectedIndicator}
+      />
+      <AdviesPanel
+        kerncijfers={kerncijfers}
+        selectedGebied={selectedGebied}
+        selectedStreet={selectedStreet}
+        geojson={geojson}
       />
     </div>
   );

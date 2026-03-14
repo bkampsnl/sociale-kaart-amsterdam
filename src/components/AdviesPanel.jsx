@@ -182,7 +182,7 @@ export default function AdviesPanel({ kerncijfers, selectedGebied, selectedStree
             <div key={i} className="advies-nearby-item">
               <span className="advies-nearby-name">{loc.naam}</span>
               <span className="advies-nearby-info">
-                {loc.capaciteit} plekken · ~{Math.round(loc.dist * 1.35 * 12)} min lopen
+                {loc.capaciteit} plekken · {loc.dist.toFixed(1)} km · ~{Math.round(loc.dist * 1.35 * 12)} min lopen
               </span>
             </div>
           ))}
