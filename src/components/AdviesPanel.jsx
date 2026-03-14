@@ -127,12 +127,9 @@ export default function AdviesPanel({ kerncijfers, selectedGebied, selectedStree
 
   return (
     <div className="advies-inline">
+      <h3 className="advies-title">Advies</h3>
       <div className="advies-inline-header">
         <div className="advies-total">
-          <div className="advies-total-score">
-            <span className="advies-score-number">{Math.round(result.totalScore * 100)}</span>
-            <span className="advies-score-label">/100</span>
-          </div>
           <div className="advies-total-info">
             <span className="advies-level" style={{ color: level.color }}>{level.label}</span>
             <span className="advies-level-text">Draagkracht</span>
@@ -152,7 +149,7 @@ export default function AdviesPanel({ kerncijfers, selectedGebied, selectedStree
               <div className="advies-group-header">
                 <span>{groupLevel?.emoji || '⚪'} {group.label}</span>
                 <span className="advies-group-score" style={{ color: groupLevel?.color || '#888' }}>
-                  {score != null ? Math.round(score * 100) : '?'}/100
+                  {groupLevel?.label || '?'}
                 </span>
               </div>
               <div className="advies-group-details">
