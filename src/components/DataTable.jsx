@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { INDICATORS } from '../api';
 import { getColor, normalizeValues, computeDraagkracht } from './MapView';
 
-export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebied, selectedStreet, onSelectGebied, selectedIndicator }) {
+export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebied, selectedStreet, onSelectGebied, onSelectStreet, selectedIndicator }) {
   const normalizedMap = useMemo(() => {
     if (!kerncijfers) return {};
     const map = {};
@@ -76,7 +76,7 @@ export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebi
             : `Overzicht alle wijken — gesorteerd op: ${selectedIndicator.label}`}
       </h3>
       {selectedGebied && (
-        <button className="clear-selection" onClick={() => onSelectGebied(null)}>
+        <button className="clear-selection" onClick={() => { onSelectGebied(null); onSelectStreet(null); }}>
           Toon alle wijken
         </button>
       )}

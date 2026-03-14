@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { INDICATORS, INDICATOR_GROUPS, searchStreets, searchAddresses, parseAddressQuery, fetchStreetGeometry, findWijkByCoord } from '../api';
 
-export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, selectedIndicator, onSelectIndicator }) {
+export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, selectedGebied, selectedIndicator, onSelectIndicator }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef(null);
+
+  // Clear query when selection is reset externally (e.g. "Toon alle wijken")
+  useEffect(() => {
+    if (!selectedGebied) setQuery('');
+  }, [selectedGebied]);
 
   useEffect(() => {
     if (!query || query.length < 2) {

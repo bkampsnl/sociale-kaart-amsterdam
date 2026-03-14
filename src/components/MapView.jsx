@@ -81,6 +81,10 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
       }
       return;
     }
+    if (!selectedGebied && !selectedStreet) {
+      map.flyTo([52.37, 4.895], 12, { duration: 1 });
+      return;
+    }
     if (!selectedGebied || !geojson) return;
 
     // Stadsdeel selected (no code = pure stadsdeel selection from search)
@@ -102,7 +106,7 @@ function FlyToArea({ geojson, selectedGebied, selectedStreet }) {
       const layer = L.geoJSON(feature);
       map.flyToBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 15 });
     }
-  }, [selectedGebied?.code, selectedGebied?.stadsdeel, selectedStreet, geojson, map]);
+  }, [selectedGebied, selectedStreet, geojson, map]);
 
   return null;
 }

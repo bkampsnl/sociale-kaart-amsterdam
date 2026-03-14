@@ -45,6 +45,7 @@ export default function App() {
         gebieden={gebieden}
         onSelectGebied={setSelectedGebied}
         onSelectStreet={setSelectedStreet}
+        selectedGebied={selectedGebied}
         selectedIndicator={selectedIndicator}
         onSelectIndicator={setSelectedIndicator}
       />
@@ -84,6 +85,7 @@ export default function App() {
         selectedGebied={selectedGebied}
         selectedStreet={selectedStreet}
         onSelectGebied={setSelectedGebied}
+        onSelectStreet={setSelectedStreet}
         selectedIndicator={selectedIndicator}
       />
     </div>
