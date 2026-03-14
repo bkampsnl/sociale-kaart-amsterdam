@@ -156,6 +156,13 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
             setQuery(e.target.value);
             setShowSuggestions(true);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !query.trim()) {
+              onSelectGebied(null);
+              onSelectStreet(null);
+              setShowSuggestions(false);
+            }
+          }}
           onFocus={() => setShowSuggestions(true)}
         />
         {loading && <span className="search-loading">Laden...</span>}
