@@ -62,6 +62,7 @@ export default function App() {
               selectedGebied={selectedGebied}
               selectedStreet={selectedStreet}
               onSelectGebied={setSelectedGebied}
+              onSelectStreet={setSelectedStreet}
               opvangLocaties={opvangLocaties}
               asielLocaties={asielLocaties}
             />

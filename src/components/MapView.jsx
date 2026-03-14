@@ -317,7 +317,31 @@ function StadsdeelHighlight({ geojson }) {
   return null;
 }
 
-export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied, opvangLocaties, asielLocaties }) {
+function HomeButton({ onSelectGebied, onSelectStreet }) {
+  const map = useMap();
+  return (
+    <div className="leaflet-top leaflet-left" style={{ top: 80 }}>
+      <div className="leaflet-control leaflet-bar">
+        <a
+          href="#"
+          title="Terug naar overzicht"
+          role="button"
+          style={{ fontSize: '18px', lineHeight: '26px', width: 26, height: 26, display: 'block', textAlign: 'center', textDecoration: 'none', color: '#000' }}
+          onClick={(e) => {
+            e.preventDefault();
+            onSelectGebied(null);
+            onSelectStreet(null);
+            map.flyTo([52.37, 4.895], 12, { duration: 1 });
+          }}
+        >
+          ⌂
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export default function MapView({ geojson, kerncijfers, selectedIndicator, selectedGebied, selectedStreet, onSelectGebied, onSelectStreet, opvangLocaties, asielLocaties }) {
   const geoJsonRef = useRef();
 
   const normalized = useMemo(() => {
@@ -378,6 +402,7 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
       <StreetHighlight selectedStreet={selectedStreet} />
       <OpvangMarkers locaties={opvangLocaties} />
       <AsielMarkers locaties={asielLocaties} />
+      <HomeButton onSelectGebied={onSelectGebied} onSelectStreet={onSelectStreet} />
     </MapContainer>
   );
 }
