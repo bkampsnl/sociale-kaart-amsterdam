@@ -31,10 +31,11 @@ const ASIEL_SOORT_ORDER = [
 ];
 
 const ASIEL_LOCATIES = [
-  { naam: 'Sloterweg', soort: 'COA Noodopvang', doelgroep: 'Asiel', adres: 'Sloterweg 773-783', capaciteit: 80, status: 'Huidig', lat: 52.341672, lon: 4.818135 },
-  { naam: 'Mercure hotel', soort: 'COA Noodopvang', doelgroep: 'Asiel', adres: 'Oude Haagseweg 20', capaciteit: 90, status: 'Huidig', lat: 52.337214, lon: 4.817336 },
-  { naam: 'Corendon', soort: 'COA Noodopvang', doelgroep: 'Asiel', adres: 'Aletta Jacobslaan 7', capaciteit: 150, status: 'Huidig', lat: 52.346632, lon: 4.831134 },
-  { naam: 'AZC Willinklaan', soort: 'COA Regulier', doelgroep: 'Asiel', adres: 'Willinklaan 3', capaciteit: 692, status: 'Huidig', lat: 52.371500, lon: 4.802109 },
+  { naam: 'Sloterweg', soort: 'COA Noodopvang', doelgroep: 'Minderjarige asielzoekers (66 jongens, 14 meiden)', adres: 'Sloterweg 773-783', capaciteit: 80, status: 'Huidig', lat: 52.341672, lon: 4.818135 },
+  { naam: 'Mercure hotel', soort: 'COA Noodopvang', doelgroep: 'Mannen', adres: 'Oude Haagseweg 20', capaciteit: 90, status: 'Huidig', lat: 52.337214, lon: 4.817336 },
+  { naam: 'Corendon', soort: 'COA Noodopvang', doelgroep: 'Asielzoekers: stellen, vrouwen en mannen (geen gezinnen)', adres: 'Aletta Jacobslaan 7', capaciteit: 150, status: 'Huidig', lat: 52.346632, lon: 4.831134 },
+  { naam: 'AZC Willinklaan', soort: 'COA Regulier', doelgroep: 'Gezinnen, stellen, vrouwen en mannen', adres: 'Willinklaan 3', capaciteit: 650, status: 'Huidig', lat: 52.371500, lon: 4.802109 },
+  { naam: 'Karmijn', soort: 'COA Regulier', doelgroep: 'Statushouders en jongeren (50/50), 18-22 jaar', adres: 'Louwesweg 5-231', capaciteit: 110, status: 'Huidig', extra: 'Verlengd huurcontract t/m 7 juli 2032', lat: 52.346395, lon: 4.824791 },
   { naam: 'Naritaweg', soort: 'Gemeentelijke opvang: OEK', doelgroep: 'OEK', adres: 'Naritaweg 156', capaciteit: 295, status: 'Huidig', lat: 52.387924, lon: 4.834725 },
   { naam: 'Kings Court', soort: 'Gemeentelijke opvang: OEK', doelgroep: 'OEK', adres: 'Delflandlaan 4', capaciteit: 230, status: 'Huidig', lat: 52.357033, lon: 4.840363 },
   { naam: 'Anderlechtlaan 181', soort: 'Gemeentelijke opvang: OEK', doelgroep: 'OEK', adres: 'Anderlechtlaan 181', capaciteit: 203, status: 'Toekomstig', lat: 52.342653, lon: 4.811939 },

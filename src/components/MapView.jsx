@@ -198,14 +198,15 @@ function AsielMarkers({ locaties }) {
         weight: 3,
         fillOpacity: 0.9,
       });
-      marker.bindPopup(
+      let popupHtml =
         `<strong>${loc.naam}</strong><br/>` +
         `<em>${loc.soort}</em><br/>` +
         `Doelgroep: ${loc.doelgroep}<br/>` +
         `${loc.adres}<br/>` +
         `Capaciteit: <strong>${loc.capaciteit}</strong> plekken<br/>` +
-        `Status: ${loc.status}`
-      );
+        `Status: ${loc.status}`;
+      if (loc.extra) popupHtml += `<br/>${loc.extra}`;
+      marker.bindPopup(popupHtml);
       marker.bindTooltip(`${loc.naam} (${loc.capaciteit})`, { direction: 'top', offset: [0, -10] });
       group.addLayer(marker);
     }
