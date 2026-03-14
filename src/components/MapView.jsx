@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import { useRef, useEffect, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { getOpvangColor } from './OpvangFilter';
+import { INDICATORS } from '../api';
 
 // Buurtfocus color scale (6 steps)
 export function getColor(value, higherIsWorse) {
@@ -27,6 +28,42 @@ export function normalizeValues(kerncijfers, indicatorId) {
   for (const [code, val] of entries) {
     const rank = sorted.filter((v) => v < val).length;
     result[code] = rank / (sorted.length - 1 || 1);
+  }
+  return result;
+}
+
+// Draagkracht-score: 0 = zwak (rood), 1 = sterk (groen)
+// Combines all indicators into a single score per wijk
+export function computeDraagkracht(kerncijfers) {
+  if (!kerncijfers) return {};
+  // Normalize each indicator
+  const allNormalized = {};
+  for (const ind of INDICATORS) {
+    allNormalized[ind.id] = normalizeValues(kerncijfers, ind.id);
+  }
+  // Collect all wijk codes
+  const codes = new Set();
+  for (const ind of INDICATORS) {
+    for (const code of Object.keys(allNormalized[ind.id])) {
+      codes.add(code);
+    }
+  }
+  // For each wijk, average all normalized values
+  // higherIsWorse indicators: high normalized = bad → invert for draagkracht
+  const result = {};
+  for (const code of codes) {
+    let sum = 0;
+    let count = 0;
+    for (const ind of INDICATORS) {
+      const val = allNormalized[ind.id][code];
+      if (val == null) continue;
+      // Convert to "goodness": 0 = bad, 1 = good
+      sum += ind.higherIsWorse ? (1 - val) : val;
+      count++;
+    }
+    if (count > 0) {
+      result[code] = sum / count;
+    }
   }
   return result;
 }
@@ -281,6 +318,9 @@ export default function MapView({ geojson, kerncijfers, selectedIndicator, selec
 
   const normalized = useMemo(() => {
     if (!kerncijfers || !selectedIndicator) return {};
+    if (selectedIndicator.id === '_draagkracht') {
+      return computeDraagkracht(kerncijfers);
+    }
     return normalizeValues(kerncijfers, selectedIndicator.id);
   }, [kerncijfers, selectedIndicator]);
 

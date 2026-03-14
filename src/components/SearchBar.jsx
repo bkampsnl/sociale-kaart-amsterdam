@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { INDICATORS, searchStreets, searchAddresses, parseAddressQuery, fetchStreetGeometry, findWijkByCoord } from '../api';
+import { INDICATORS, INDICATOR_GROUPS, searchStreets, searchAddresses, parseAddressQuery, fetchStreetGeometry, findWijkByCoord } from '../api';
 
 export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, selectedIndicator, onSelectIndicator }) {
   const [query, setQuery] = useState('');
@@ -198,16 +198,25 @@ export default function SearchBar({ gebieden, onSelectGebied, onSelectStreet, se
       </div>
 
       <select
-        value={selectedIndicator?.id || ''}
+        value={selectedIndicator?.id || '_draagkracht'}
         onChange={(e) => {
-          const ind = INDICATORS.find((i) => i.id === e.target.value);
-          onSelectIndicator(ind);
+          if (e.target.value === '_draagkracht') {
+            onSelectIndicator({ id: '_draagkracht', label: 'Draagkracht-score', higherIsWorse: false, scale: 'draagkracht' });
+          } else {
+            const ind = INDICATORS.find((i) => i.id === e.target.value);
+            onSelectIndicator(ind);
+          }
         }}
       >
-        {INDICATORS.map((ind) => (
-          <option key={ind.id} value={ind.id}>
-            {ind.label}
-          </option>
+        <option value="_draagkracht">Draagkracht-score (samenvatting)</option>
+        {INDICATOR_GROUPS.map((group) => (
+          <optgroup key={group.key} label={group.label}>
+            {INDICATORS.filter((ind) => ind.group === group.key).map((ind) => (
+              <option key={ind.id} value={ind.id}>
+                {ind.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
     </div>

@@ -5,6 +5,7 @@ import DataTable from './components/DataTable';
 import ScorePanel from './components/ScorePanel';
 import SearchBar from './components/SearchBar';
 import OpvangFilter from './components/OpvangFilter';
+import AdviesPanel from './components/AdviesPanel';
 import { fetchGebieden, fetchAllKerncijfers, INDICATORS } from './api';
 import { gebiedenToGeoJSON } from './geo';
 
@@ -14,7 +15,7 @@ export default function App() {
   const [kerncijfers, setKerncijfers] = useState(null);
   const [selectedGebied, setSelectedGebied] = useState(null);
   const [selectedStreet, setSelectedStreet] = useState(null);
-  const [selectedIndicator, setSelectedIndicator] = useState(INDICATORS[0]);
+  const [selectedIndicator, setSelectedIndicator] = useState({ id: '_draagkracht', label: 'Draagkracht-score', higherIsWorse: false, scale: 'draagkracht' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [opvangLocaties, setOpvangLocaties] = useState([]);
@@ -53,6 +54,11 @@ export default function App() {
         ) : (
           <>
             <OpvangFilter onLocatiesChange={setOpvangLocaties} onAsielLocatiesChange={setAsielLocaties} />
+            <AdviesPanel
+              kerncijfers={kerncijfers}
+              onSelectGebied={setSelectedGebied}
+              onSelectStreet={setSelectedStreet}
+            />
             <MapView
               geojson={geojson}
               kerncijfers={kerncijfers}

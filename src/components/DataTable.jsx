@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { INDICATORS } from '../api';
-import { getColor, normalizeValues } from './MapView';
+import { getColor, normalizeValues, computeDraagkracht } from './MapView';
 
 export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebied, selectedStreet, onSelectGebied, selectedIndicator }) {
   const normalizedMap = useMemo(() => {
@@ -12,9 +12,27 @@ export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebi
     return map;
   }, [kerncijfers]);
 
+  // Draagkracht scores for sorting when draagkracht is selected
+  const draagkracht = useMemo(() => {
+    if (!kerncijfers || selectedIndicator?.id !== '_draagkracht') return null;
+    return computeDraagkracht(kerncijfers);
+  }, [kerncijfers, selectedIndicator]);
+
   // Sort by the currently selected indicator (worst first)
   const sorted = useMemo(() => {
     if (!gebieden.length || !kerncijfers || !selectedIndicator) return [];
+    if (selectedIndicator.id === '_draagkracht' && draagkracht) {
+      return [...gebieden]
+        .filter((g) => !g.eindGeldigheid)
+        .sort((a, b) => {
+          const aVal = draagkracht[a.code];
+          const bVal = draagkracht[b.code];
+          if (aVal == null && bVal == null) return 0;
+          if (aVal == null) return 1;
+          if (bVal == null) return -1;
+          return aVal - bVal; // lowest draagkracht first (worst)
+        });
+    }
     const indId = selectedIndicator.id;
     return [...gebieden]
       .filter((g) => !g.eindGeldigheid)
@@ -26,7 +44,7 @@ export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebi
         if (bVal == null) return -1;
         return selectedIndicator.higherIsWorse ? bVal - aVal : aVal - bVal;
       });
-  }, [gebieden, kerncijfers, selectedIndicator]);
+  }, [gebieden, kerncijfers, selectedIndicator, draagkracht]);
 
   // When a stadsdeel is selected, show wijken in that stadsdeel
   // When a wijk is selected, show only that row; otherwise show all
@@ -137,21 +155,33 @@ export default function DataTable({ gebieden, geojson, kerncijfers, selectedGebi
 }
 
 function shortLabel(label) {
-  return label
-    .replace('Misdrijven per 1.000 inwoners', 'Misdrijven/1k')
-    .replace('Veiligheid buurt (1-10)', 'Veiligheid')
-    .replace('Overlast: % veel', 'Overlast %')
-    .replace('Kwetsbaarheidsscore hoog (%)', 'Kwetsbaar %')
-    .replace('Sociale cohesie (1-10)', 'Soc. cohesie')
-    .replace('SES laag (%)', 'SES laag %')
-    .replace('Overlast: drugsgebruik (%)', 'Drugs %')
-    .replace('Overlast: jongeren (%)', 'Jongeren %')
-    .replace('Criminaliteit: % veel', 'Crimi %');
+  const map = {
+    'Misdrijven per 1.000 inwoners': 'Misdrijven/1k',
+    'Veiligheid buurt (1-10)': 'Veiligheid',
+    'High Impact Crime index': 'HIC index',
+    'Criminaliteit: % veel': 'Crimi %',
+    'Drugsoverlast (%)': 'Drugs %',
+    'Overlast: % veel': 'Overlast %',
+    'Overlast: jongeren (%)': 'Jongeren %',
+    'Leefbaarheid buurt (1-10)': 'Leefbaarh.',
+    'Sociale cohesie (1-10)': 'Soc. cohesie',
+    'Eenzaamheid (%)': 'Eenzaam %',
+    'Discriminatie-ervaring (%)': 'Discrim. %',
+    'Omgang tussen groepen (1-10)': 'Omgang gr.',
+    'Kwetsbaarheid hoog (%)': 'Kwetsbaar %',
+    'SES laag (%)': 'SES laag %',
+    'Uitkeringsdruk (%)': 'Uitkering %',
+    'Psychische klachten (%)': 'Psych. %',
+    'Kwetsbare kinderen (%)': 'Kwetsb. kind.',
+    'Woningdruk: krap wonen (%)': 'Woningdruk %',
+  };
+  return map[label] || label;
 }
 
 function formatVal(val, ind) {
-  if (ind.id.endsWith('_R')) return val.toFixed(1);
-  if (ind.id.endsWith('_P')) return `${val.toFixed(1)}%`;
+  if (ind.scale === '1-10' || ind.id.endsWith('_R')) return val.toFixed(1);
+  if (ind.scale === 'percentage' || ind.id.endsWith('_P')) return `${val.toFixed(1)}%`;
+  if (ind.scale === 'index' || ind.id.endsWith('_I')) return Math.round(val).toString();
   if (Number.isInteger(val)) return val.toString();
   return val.toFixed(1);
 }

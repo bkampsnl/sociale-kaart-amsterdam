@@ -59,8 +59,9 @@ function shortLabel(label) {
 }
 
 function formatVal(val, ind) {
-  if (ind.id.endsWith('_R')) return val.toFixed(1);
-  if (ind.id.endsWith('_P')) return `${val.toFixed(1)}%`;
+  if (ind.scale === '1-10' || ind.id.endsWith('_R')) return val.toFixed(1);
+  if (ind.scale === 'percentage' || ind.id.endsWith('_P')) return `${val.toFixed(1)}%`;
+  if (ind.scale === 'index' || ind.id.endsWith('_I')) return Math.round(val).toString();
   if (Number.isInteger(val)) return val.toString();
   return val.toFixed(1);
 }
@@ -68,6 +69,7 @@ function formatVal(val, ind) {
 function barWidth(val, ind) {
   if (ind.scale === '1-10') return (val / 10) * 100;
   if (ind.scale === 'percentage') return Math.min(val, 100);
+  if (ind.scale === 'index') return Math.min((val / 150) * 100, 100);
   // For count (misdrijven): cap at 150 for visual purposes
   return Math.min((val / 150) * 100, 100);
 }

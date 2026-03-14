@@ -13,60 +13,128 @@ export async function fetchGebieden() {
   return all.filter((g) => g.geometrie && !g.eindGeldigheid);
 }
 
+// Category groups for the dropdown and advice panel
+export const INDICATOR_GROUPS = [
+  { key: 'veiligheid', label: 'Veiligheid' },
+  { key: 'overlast', label: 'Overlast & Leefbaarheid' },
+  { key: 'sociaal', label: 'Sociaal' },
+  { key: 'kwetsbaarheid', label: 'Kwetsbaarheid' },
+  { key: 'wonen', label: 'Wonen & Ruimte' },
+];
+
 export const INDICATORS = [
+  // ── Veiligheid ──
   {
-    id: 'VMISDRIJF_1000INW', label: 'Misdrijven per 1.000 inwoners', category: 'criminaliteit', higherIsWorse: true,
+    id: 'VMISDRIJF_1000INW', label: 'Misdrijven per 1.000 inwoners', group: 'veiligheid', higherIsWorse: true,
     description: 'Aantal geregistreerde misdrijven per 1.000 inwoners in deze wijk.',
     scale: 'aantal',
     interpret: (v) => v < 40 ? 'Laag' : v < 70 ? 'Gemiddeld' : v < 100 ? 'Hoog' : 'Zeer hoog',
   },
   {
-    id: 'VBUURTVEILIG_R', label: 'Veiligheid buurt (1-10)', category: 'veiligheid', higherIsWorse: false,
-    description: 'Rapportcijfer (1-10) dat bewoners geven voor de veiligheid in hun buurt. Gebaseerd op de Veiligheidsmonitor.',
+    id: 'VBUURTVEILIG_R', label: 'Veiligheid buurt (1-10)', group: 'veiligheid', higherIsWorse: false,
+    description: 'Rapportcijfer (1-10) dat bewoners geven voor de veiligheid in hun buurt.',
     scale: '1-10',
     interpret: (v) => v >= 7.5 ? 'Goed' : v >= 6.5 ? 'Voldoende' : v >= 5.5 ? 'Matig' : 'Onvoldoende',
   },
   {
-    id: 'LOVERL_P', label: 'Overlast: % veel', category: 'overlast', higherIsWorse: true,
+    id: 'V_GERCRIM_HIC_I', label: 'High Impact Crime index', group: 'veiligheid', higherIsWorse: true,
+    description: 'Index voor zware criminaliteit: overvallen, straatroof, woninginbraak. Hoger = meer zware criminaliteit.',
+    scale: 'index',
+    interpret: (v) => v < 80 ? 'Laag' : v < 100 ? 'Gemiddeld' : v < 130 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'VCRIMI_P', label: 'Criminaliteit: % veel', group: 'veiligheid', higherIsWorse: true,
+    description: 'Percentage bewoners dat aangeeft veel criminaliteit te ervaren in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 35 ? 'Veel' : 'Zeer veel',
+  },
+  {
+    id: 'VDRUGSGEBR_P', label: 'Drugsoverlast (%)', group: 'veiligheid', higherIsWorse: true,
+    description: 'Percentage bewoners dat overlast ervaart door drugsgebruik in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 5 ? 'Weinig' : v < 15 ? 'Gemiddeld' : v < 25 ? 'Veel' : 'Zeer veel',
+  },
+  // ── Overlast & Leefbaarheid ──
+  {
+    id: 'LOVERL_P', label: 'Overlast: % veel', group: 'overlast', higherIsWorse: true,
     description: 'Percentage bewoners dat aangeeft veel overlast te ervaren in de buurt.',
     scale: 'percentage',
     interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 35 ? 'Veel' : 'Zeer veel',
   },
   {
-    id: 'SKKWETS34_P', label: 'Kwetsbaarheidsscore hoog (%)', category: 'kwetsbaarheid', higherIsWorse: true,
-    description: 'Percentage bewoners met een hoge kwetsbaarheidsscore. Combineert factoren als inkomen, gezondheid en sociaal isolement.',
-    scale: 'percentage',
-    interpret: (v) => v < 15 ? 'Laag' : v < 30 ? 'Gemiddeld' : v < 45 ? 'Hoog' : 'Zeer hoog',
-  },
-  {
-    id: 'LSOCCOH_R', label: 'Sociale cohesie (1-10)', category: 'sociaal', higherIsWorse: false,
-    description: 'Rapportcijfer (1-10) voor sociale samenhang in de buurt. Meet onderlinge betrokkenheid, vertrouwen en contact tussen bewoners.',
-    scale: '1-10',
-    interpret: (v) => v >= 7 ? 'Sterk' : v >= 6 ? 'Voldoende' : v >= 5 ? 'Matig' : 'Zwak',
-  },
-  {
-    id: 'SKSES234_P', label: 'SES laag (%)', category: 'kwetsbaarheid', higherIsWorse: true,
-    description: 'Percentage bewoners met een lage sociaaleconomische status (SES). Gebaseerd op opleiding, inkomen en arbeidsmarktpositie.',
-    scale: 'percentage',
-    interpret: (v) => v < 20 ? 'Laag' : v < 40 ? 'Gemiddeld' : v < 60 ? 'Hoog' : 'Zeer hoog',
-  },
-  {
-    id: 'VDRUGSGEBR_P', label: 'Overlast: drugsgebruik (%)', category: 'overlast', higherIsWorse: true,
-    description: 'Percentage bewoners dat overlast ervaart door drugsgebruik in de buurt.',
-    scale: 'percentage',
-    interpret: (v) => v < 5 ? 'Weinig' : v < 15 ? 'Gemiddeld' : v < 25 ? 'Veel' : 'Zeer veel',
-  },
-  {
-    id: 'LJONGERENOVL_P', label: 'Overlast: jongeren (%)', category: 'overlast', higherIsWorse: true,
+    id: 'LJONGERENOVL_P', label: 'Overlast: jongeren (%)', group: 'overlast', higherIsWorse: true,
     description: 'Percentage bewoners dat overlast ervaart door groepen jongeren in de buurt.',
     scale: 'percentage',
     interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 30 ? 'Veel' : 'Zeer veel',
   },
   {
-    id: 'VCRIMI_P', label: 'Criminaliteit: % veel', category: 'criminaliteit', higherIsWorse: true,
-    description: 'Percentage bewoners dat aangeeft veel criminaliteit te ervaren in de buurt.',
+    id: 'LLEEFBAARBRT_R', label: 'Leefbaarheid buurt (1-10)', group: 'overlast', higherIsWorse: false,
+    description: 'Rapportcijfer (1-10) hoe prettig bewoners het vinden om in de buurt te wonen.',
+    scale: '1-10',
+    interpret: (v) => v >= 7.5 ? 'Goed' : v >= 6.5 ? 'Voldoende' : v >= 5.5 ? 'Matig' : 'Onvoldoende',
+  },
+  // ── Sociaal ──
+  {
+    id: 'LSOCCOH_R', label: 'Sociale cohesie (1-10)', group: 'sociaal', higherIsWorse: false,
+    description: 'Rapportcijfer (1-10) voor sociale samenhang in de buurt.',
+    scale: '1-10',
+    interpret: (v) => v >= 7 ? 'Sterk' : v >= 6 ? 'Voldoende' : v >= 5 ? 'Matig' : 'Zwak',
+  },
+  {
+    id: 'PEENZ_P', label: 'Eenzaamheid (%)', group: 'sociaal', higherIsWorse: true,
+    description: 'Percentage bewoners (19+) dat ernstig eenzaam is.',
     scale: 'percentage',
-    interpret: (v) => v < 10 ? 'Weinig' : v < 20 ? 'Gemiddeld' : v < 35 ? 'Veel' : 'Zeer veel',
+    interpret: (v) => v < 8 ? 'Laag' : v < 14 ? 'Gemiddeld' : v < 20 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'LDISCRI_P', label: 'Discriminatie-ervaring (%)', group: 'sociaal', higherIsWorse: true,
+    description: 'Percentage bewoners dat discriminatie ervaart in de buurt.',
+    scale: 'percentage',
+    interpret: (v) => v < 5 ? 'Weinig' : v < 12 ? 'Gemiddeld' : v < 20 ? 'Veel' : 'Zeer veel',
+  },
+  {
+    id: 'LOMGANGGROEPENB_R', label: 'Omgang tussen groepen (1-10)', group: 'sociaal', higherIsWorse: false,
+    description: 'Rapportcijfer (1-10) voor hoe verschillende groepen in de buurt met elkaar omgaan.',
+    scale: '1-10',
+    interpret: (v) => v >= 7 ? 'Goed' : v >= 6 ? 'Voldoende' : v >= 5 ? 'Matig' : 'Slecht',
+  },
+  // ── Kwetsbaarheid ──
+  {
+    id: 'SKKWETS34_P', label: 'Kwetsbaarheid hoog (%)', group: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage bewoners met een hoge kwetsbaarheidsscore.',
+    scale: 'percentage',
+    interpret: (v) => v < 15 ? 'Laag' : v < 30 ? 'Gemiddeld' : v < 45 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'SKSES234_P', label: 'SES laag (%)', group: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage bewoners met een lage sociaaleconomische status.',
+    scale: 'percentage',
+    interpret: (v) => v < 20 ? 'Laag' : v < 40 ? 'Gemiddeld' : v < 60 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'PUITKERING_1874_P', label: 'Uitkeringsdruk (%)', group: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage bewoners (18-74) met een uitkering.',
+    scale: 'percentage',
+    interpret: (v) => v < 5 ? 'Laag' : v < 10 ? 'Gemiddeld' : v < 18 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'WZDEPR_P', label: 'Psychische klachten (%)', group: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage bewoners met ernstige psychische problemen.',
+    scale: 'percentage',
+    interpret: (v) => v < 5 ? 'Laag' : v < 10 ? 'Gemiddeld' : v < 16 ? 'Hoog' : 'Zeer hoog',
+  },
+  {
+    id: 'SK017_KWETS34_P', label: 'Kwetsbare kinderen (%)', group: 'kwetsbaarheid', higherIsWorse: true,
+    description: 'Percentage kinderen (0-17) met een hoge kwetsbaarheidsscore.',
+    scale: 'percentage',
+    interpret: (v) => v < 15 ? 'Laag' : v < 30 ? 'Gemiddeld' : v < 45 ? 'Hoog' : 'Zeer hoog',
+  },
+  // ── Wonen & Ruimte ──
+  {
+    id: 'W_KRAP_P', label: 'Woningdruk: krap wonen (%)', group: 'wonen', higherIsWorse: true,
+    description: 'Percentage bewoners dat krap woont (minder dan 20m² per persoon).',
+    scale: 'percentage',
+    interpret: (v) => v < 10 ? 'Laag' : v < 20 ? 'Gemiddeld' : v < 35 ? 'Hoog' : 'Zeer hoog',
   },
 ];
 
